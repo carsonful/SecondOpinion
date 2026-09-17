@@ -20,8 +20,8 @@ jobs:
             // the real @mentions in the footer prompt.
             const GITHUB_TO_GROUPME_NAME = {
               carsonful: 'Carson Fulmer',
-              njreed: 'NJ',
-              scrublad: 'Joseph Patriarca',
+              njnereed: 'NJ',
+              scrublad: 'Joey Patriarca',
               ishanrk: 'Ishan Kumthekar',
               
               // teammateLogin: 'Their GroupMe Name',
