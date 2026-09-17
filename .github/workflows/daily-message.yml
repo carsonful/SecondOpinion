@@ -1,0 +1,177 @@
+name: Daily GroupMe Message
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 13:00 UTC daily — adjust for your timezone
+  workflow_dispatch:        # allows manual trigger for testing
+
+jobs:
+  send-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gather issues + project status and post to GroupMe
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const owner = 'carsonful';
+            const repo = 'SecondOpinion';
+            const projectOwner = 'carsonful';
+            const projectNumber = 4;
+
+            // EDIT THIS: map each GitHub login to their EXACT display name
+            // (nickname) as it appears in your GroupMe group. Mentions only
+            // work for names found in the group's member list below.
+            const GITHUB_TO_GROUPME_NAME = {
+              carsonful: 'Carson Fulmer'              
+              
+              // teammateLogin: 'Their GroupMe Name',
+            };
+
+            const GROUPME_BOT_ID = process.env.GROUPME_BOT_ID;
+            const GROUPME_ACCESS_TOKEN = process.env.GROUPME_ACCESS_TOKEN;
+
+            // ---------- Find the group this bot posts to, and its members ----------
+
+            async function getGroupMembers() {
+              const botsRes = await fetch(`https://api.groupme.com/v3/bots?token=${GROUPME_ACCESS_TOKEN}`);
+              const botsJson = await botsRes.json();
+              const bot = (botsJson.response || []).find(b => b.bot_id === GROUPME_BOT_ID);
+              if (!bot) return {};
+
+              const groupRes = await fetch(`https://api.groupme.com/v3/groups/${bot.group_id}?token=${GROUPME_ACCESS_TOKEN}`);
+              const groupJson = await groupRes.json();
+              const members = groupJson.response?.members || [];
+
+              const nameToId = {};
+              for (const m of members) nameToId[m.nickname] = m.user_id;
+              return nameToId;
+            }
+
+            // ---------- Fetch issues + project items ----------
+
+            const issuesResp = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', per_page: 100
+            });
+            const issues = issuesResp.data.filter(i => !i.pull_request);
+
+            const query = `
+              query($login: String!, $number: Int!) {
+                user(login: $login) {
+                  projectV2(number: $number) {
+                    items(first: 100) {
+                      nodes {
+                        fieldValueByName(name: "Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue { name }
+                        }
+                        content {
+                          ... on Issue { title number assignees(first: 5) { nodes { login } } }
+                          ... on PullRequest { title number assignees(first: 5) { nodes { login } } }
+                          ... on DraftIssue { title }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            const result = await github.graphql(query, { login: projectOwner, number: projectNumber });
+            const items = result.user.projectV2.items.nodes;
+            const todo = items.filter(i => i.fieldValueByName?.name === 'Todo');
+            const inProgress = items.filter(i => i.fieldValueByName?.name === 'In Progress');
+
+            // ---------- Build the message, tracking mention positions as we go ----------
+
+            const nameToId = await getGroupMembers();
+
+            let message = '';
+            const mentionUserIds = [];
+            const mentionLoci = [];
+
+            function appendText(str) { message += str; }
+
+            // Appends "@Name" for each GitHub login; mentions the ones we can
+            // resolve to a real GroupMe user_id, plain-texts the rest.
+            function appendAssignees(logins) {
+              if (!logins || logins.length === 0) {
+                appendText('Unassigned');
+                return;
+              }
+              logins.forEach((login, idx) => {
+                if (idx > 0) appendText(' ');
+                const groupmeName = GITHUB_TO_GROUPME_NAME[login];
+                const userId = groupmeName ? nameToId[groupmeName] : undefined;
+                const token = `@${groupmeName || login}`;
+                if (userId) {
+                  mentionUserIds.push(userId);
+                  mentionLoci.push([message.length, token.length]);
+                }
+                appendText(token);
+              });
+            }
+
+            const today = new Date().toLocaleDateString('en-US', {
+              weekday: 'long', month: 'short', day: 'numeric'
+            });
+            const divider = '───────────────';
+
+            appendText(`📋 ${repo} — ${today}\n${divider}\n\n`);
+
+            appendText(`🔴 OPEN ISSUES (${issues.length})\n`);
+            if (issues.length === 0) {
+              appendText('   None');
+            } else {
+              issues.forEach((i, idx) => {
+                appendText(`#${i.number}  ${i.title}\n      ↳ `);
+                appendAssignees((i.assignees || []).map(a => a.login));
+                if (idx < issues.length - 1) appendText('\n');
+              });
+            }
+
+            appendText(`\n\n${divider}\n🟡 TO DO (${todo.length})\n`);
+            if (todo.length === 0) {
+              appendText('   None');
+            } else {
+              todo.forEach((i, idx) => {
+                appendText(`•  ${i.content?.title ?? 'Untitled'}\n      ↳ `);
+                appendAssignees((i.content?.assignees?.nodes || []).map(a => a.login));
+                if (idx < todo.length - 1) appendText('\n');
+              });
+            }
+
+            appendText(`\n\n${divider}\n🔵 IN PROGRESS (${inProgress.length})\n`);
+            if (inProgress.length === 0) {
+              appendText('   None');
+            } else {
+              inProgress.forEach((i, idx) => {
+                appendText(`•  ${i.content?.title ?? 'Untitled'}\n      ↳ `);
+                appendAssignees((i.content?.assignees?.nodes || []).map(a => a.login));
+                if (idx < inProgress.length - 1) appendText('\n');
+              });
+            }
+
+            // GroupMe messages are capped at 1000 characters. If we truncate,
+            // drop any mentions whose position falls past the cut.
+            if (message.length > 1000) {
+              message = message.slice(0, 985) + '\n…(truncated)';
+              while (mentionLoci.length && mentionLoci[mentionLoci.length - 1][0] > 985) {
+                mentionLoci.pop();
+                mentionUserIds.pop();
+              }
+            }
+
+            // ---------- Post to GroupMe ----------
+
+            const body = { bot_id: GROUPME_BOT_ID, text: message };
+            if (mentionUserIds.length > 0) {
+              body.attachments = [{ type: 'mentions', user_ids: mentionUserIds, loci: mentionLoci }];
+            }
+
+            await fetch('https://api.groupme.com/v3/bots/post', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+        env:
+          GROUPME_BOT_ID: ${{ secrets.GROUPME_BOT_ID }}
+          GROUPME_ACCESS_TOKEN: ${{ secrets.GROUPME_ACCESS_TOKEN }}
