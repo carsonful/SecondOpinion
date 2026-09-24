@@ -13,6 +13,24 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Test backend with coverage
+        run: |
+          python -m pip install -r backend/requirements-dev.txt
+          python -m pytest backend/tests --cov=backend/app --cov-config=backend/pyproject.toml --cov-report=xml:backend/coverage.xml
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Test frontend with coverage
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run test:coverage
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
