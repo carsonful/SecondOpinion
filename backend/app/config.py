@@ -10,6 +10,9 @@ class Settings(BaseSettings):
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
+    database_url: str = "postgresql+psycopg://secondopinion:secondopinion@localhost:5432/secondopinion"
+    ncbi_email: str | None = None
+    ncbi_api_key: str | None = None
 
 
 @lru_cache

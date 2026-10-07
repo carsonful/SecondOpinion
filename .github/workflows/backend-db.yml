@@ -1,0 +1,34 @@
+name: Backend database
+on:
+  push:
+    branches: [feat/postgres-pubmed]
+  pull_request:
+    paths:
+      - "backend/**"
+      - "compose.yaml"
+      - ".github/workflows/backend-db.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: secondopinion
+          POSTGRES_PASSWORD: secondopinion
+          POSTGRES_DB: secondopinion_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U secondopinion -d secondopinion_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://secondopinion:secondopinion@localhost:5432/secondopinion_test
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-dev.txt
+        working-directory: backend
+      - run: pytest -q
+        working-directory: backend
