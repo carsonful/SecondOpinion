@@ -29,3 +29,7 @@ npm run dev
 ```
 
 Runs on http://localhost:5173 and proxies `/api` requests to the backend.
+
+## Documentation
+
+- [Evidence-grading framework notes](docs/evidence-grading.md)
