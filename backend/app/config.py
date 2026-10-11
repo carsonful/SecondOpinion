@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # NCBI E-utilities. An API key raises the rate limit from 3 to 10 requests/second.
+    # NCBI asks every client to identify itself with a tool name and contact email.
+    ncbi_api_key: str | None = None
+    ncbi_email: str | None = None
+    ncbi_tool: str = "SecondOpinion"
+
 
 @lru_cache
 def get_settings() -> Settings:
