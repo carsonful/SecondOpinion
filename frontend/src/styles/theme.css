@@ -1,0 +1,77 @@
+:root {
+  --navy: #0B1957;
+  --navy-mid: #1B3B6F;
+  --blue: #2F6690;
+  --blue-light: #A3CEF1;
+  --blue-pale: #9ECCFA;
+  --cream: #F6E4C8;
+  --paper: #FFF8EE;
+  --ink: #16233E;
+  --ink-soft: #5A6B8C;
+  --border: #D9E6F2;
+  --success: #2F8F5B;
+  --success-bg: #E5F6EC;
+  --warning: #B98900;
+  --warning-bg: #FBF3DC;
+  --danger: #B3402F;
+  --danger-bg: #FBE9E6;
+
+  --font-sans: 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-card: 0 1px 2px rgba(11, 25, 87, 0.06), 0 8px 24px rgba(11, 25, 87, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(80, 150, 220, 0.55) 0%, transparent 45%),
+    linear-gradient(135deg, #0B1957 0%, #12306e 30%, #1B3B6F 55%, #2F6690 100%);
+}
+
+.glass-pill {
+  background: rgba(163, 206, 241, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #fff;
+}
+
+.glass-panel {
+  background: rgba(255, 248, 238, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 12px 40px rgba(11, 25, 87, 0.22);
+  color: var(--ink);
+}
+
+.glass-card{
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
