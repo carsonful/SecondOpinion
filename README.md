@@ -44,6 +44,16 @@ backend/app/
 backend/tests/  # pytest suite
 ```
 
+Endpoints (full schemas at `/docs`):
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Status and API version |
+| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
+| GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
+
+PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
+
 ### Frontend
 
 ```
