@@ -1,3 +1,11 @@
+/* =========================================================
+   Second Opinion theme
+   - Brand palette stays fixed in :root
+   - Everything that changes between dark and light lives in
+     the [data-theme] blocks below, so components only use
+     the semantic tokens (--text-strong, --card-bg, ...)
+   ========================================================= */
+
 :root {
   --navy: #0B1957;
   --navy-mid: #1B3B6F;
@@ -16,11 +24,154 @@
   --danger: #B3402F;
   --danger-bg: #FBE9E6;
 
+  /* Dark mode, "ink & cream": near-black navy using the Figma stop
+     positions (0/19/43/69/88/100 at 114deg), with the Figma blue (#125FC9)
+     kept only as soft glows in the top-left and bottom-right corners. */
+  --gradient-dark:
+    radial-gradient(ellipse at 0% 0%, rgba(18, 95, 201, 0.55) 0%, transparent 42%),
+    radial-gradient(ellipse at 100% 100%, rgba(18, 95, 201, 0.5) 0%, transparent 42%),
+    linear-gradient(
+      114deg,
+      #0A1B3F 0%,
+      #081634 19%,
+      #060F27 43%,
+      #060F27 69%,
+      #081634 88%,
+      #0A1B3F 100%
+    );
+
+  /* Light mode: the exact same angle and stop positions as the Figma dark
+     gradient, mirrored the same way: soft sky-blue edges, cream band. */
+  --gradient-light: linear-gradient(
+    114deg,
+    #D9EBFB 0%,
+    #EEF5FC 19%,
+    #FFF8EE 43%,
+    #FFF8EE 69%,
+    #EEF5FC 88%,
+    #D9EBFB 100%
+  );
+
   --font-sans: 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* "Doctor's handwriting": logo "Second", About headline, Rx signature */
+  --font-hand: 'Homemade Apple', 'Segoe Script', cursive;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 22px;
   --shadow-card: 0 1px 2px rgba(11, 25, 87, 0.06), 0 8px 24px rgba(11, 25, 87, 0.06);
+}
+
+/* ---------- Dark (default): ink & cream ---------- */
+.page[data-theme='dark'] {
+  color-scheme: dark;
+  --text-strong: #FFF8EE;
+  --text-body: rgba(255, 248, 238, 0.84);
+  --text-muted: rgba(246, 228, 200, 0.68);
+  --accent-text: #F6E4C8;
+  --divider: rgba(246, 228, 200, 0.14);
+  --headline-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+
+  --pill-bg: linear-gradient(135deg, rgba(255, 248, 238, 0.14), rgba(255, 248, 238, 0.05));
+  --pill-bg-hover: rgba(255, 248, 238, 0.2);
+  --pill-border: rgba(255, 248, 238, 0.2);
+  --pill-text: #F6E4C8;
+
+  /* Liquid glass, cream-tinted */
+  --card-bg: linear-gradient(135deg, rgba(255, 248, 238, 0.12) 0%, rgba(255, 248, 238, 0.03) 55%, rgba(255, 248, 238, 0.08) 100%);
+  --card-border: rgba(255, 248, 238, 0.16);
+  --card-shadow:
+    inset 0 1.5px 0 rgba(255, 248, 238, 0.35),
+    inset 0 -10px 24px rgba(246, 228, 200, 0.05),
+    0 20px 50px rgba(0, 0, 0, 0.45);
+  --card-shadow-hover:
+    inset 0 1.5px 0 rgba(255, 248, 238, 0.45),
+    inset 0 -10px 24px rgba(246, 228, 200, 0.08),
+    0 24px 56px rgba(0, 0, 0, 0.5);
+  --tint-blue: linear-gradient(160deg, rgba(158, 204, 250, 0.16) 0%, rgba(158, 204, 250, 0.05) 60%, rgba(158, 204, 250, 0.1) 100%);
+  --tint-cream: linear-gradient(160deg, rgba(246, 228, 200, 0.22) 0%, rgba(246, 228, 200, 0.08) 60%, rgba(246, 228, 200, 0.15) 100%);
+  --seam: rgba(246, 228, 200, 0.45);
+  --gloss: linear-gradient(90deg, rgba(255, 248, 238, 0.25), rgba(255, 248, 238, 0));
+  --ring: rgba(246, 228, 200, 0.7);
+
+  --panel-bg: rgba(255, 248, 238, 0.94);
+  --panel-border: rgba(255, 248, 238, 0.55);
+
+  --field-shell-bg: rgba(255, 248, 238, 0.1);
+  --field-shell-border: rgba(255, 248, 238, 0.22);
+  --input-bg: rgba(255, 248, 238, 0.94);
+
+  --chip-bg: rgba(255, 248, 238, 0.08);
+  --chip-border: rgba(255, 248, 238, 0.2);
+  --chip-text: #FFF8EE;
+
+  --icon-tile-bg: rgba(246, 228, 200, 0.12);
+  --icon-tile-border: rgba(255, 248, 238, 0.22);
+
+  --cta-bg: #F6E4C8;
+  --cta-bg-hover: #FFF8EE;
+  --cta-text: #060F27;
+
+  --step-num-bg: #F6E4C8;
+  --step-num-text: #060F27;
+}
+
+/* ---------- Light ----------
+   .theme-light lets one section stay light inside a dark page
+   (the About page's team section). */
+.page[data-theme='light'],
+.page[data-theme='dark'] .theme-light {
+  color-scheme: light;
+  --text-strong: var(--navy);
+  --text-body: var(--ink);
+  --text-muted: var(--ink-soft);
+  --accent-text: var(--blue);
+  --divider: rgba(11, 25, 87, 0.1);
+  --headline-shadow: none;
+
+  --pill-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.28));
+  --pill-bg-hover: rgba(255, 255, 255, 0.8);
+  --pill-border: rgba(255, 255, 255, 0.85);
+  --pill-text: var(--navy-mid);
+
+  /* Liquid glass */
+  --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 55%, rgba(255, 255, 255, 0.32) 100%);
+  --card-border: rgba(255, 255, 255, 0.75);
+  --card-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -10px 24px rgba(158, 204, 250, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 18px 44px rgba(11, 25, 87, 0.12);
+  --card-shadow-hover:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -10px 24px rgba(158, 204, 250, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 22px 52px rgba(11, 25, 87, 0.16);
+  --tint-blue: linear-gradient(160deg, rgba(158, 204, 250, 0.4) 0%, rgba(190, 222, 248, 0.26) 60%, rgba(158, 204, 250, 0.3) 100%);
+  --tint-cream: linear-gradient(160deg, rgba(246, 228, 200, 0.6) 0%, rgba(246, 228, 200, 0.3) 60%, rgba(214, 180, 130, 0.25) 100%);
+  --seam: rgba(255, 255, 255, 0.95);
+  --gloss: linear-gradient(90deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+  --ring: rgba(158, 204, 250, 0.9);
+
+  --panel-bg: rgba(255, 252, 246, 0.72);
+  --panel-border: rgba(255, 255, 255, 0.9);
+
+  --field-shell-bg: rgba(255, 255, 255, 0.45);
+  --field-shell-border: rgba(255, 255, 255, 0.9);
+  --input-bg: #ffffff;
+
+  --chip-bg: rgba(255, 255, 255, 0.65);
+  --chip-border: rgba(47, 102, 144, 0.18);
+  --chip-text: var(--navy-mid);
+
+  --icon-tile-bg: rgba(255, 255, 255, 0.6);
+  --icon-tile-border: rgba(255, 255, 255, 0.9);
+
+  --cta-bg: var(--navy);
+  --cta-bg-hover: #0d2266;
+  --cta-text: #ffffff;
+
+  --step-num-bg: var(--navy);
+  --step-num-text: #ffffff;
 }
 
 * {
@@ -29,14 +180,23 @@
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: #060F27;
   color: var(--ink);
   font-family: var(--font-sans);
+  /* Comfortaa is loaded at 500/600/700 only (see index.html), so body text
+     is set to 500 explicitly instead of relying on the browser's fallback. */
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Overscroll / rubber-band area matches the active theme */
+body:has(.page[data-theme='light']) {
+  background: #FFF8EE;
 }
 
 button {
   font-family: inherit;
+  font-weight: inherit;
   cursor: pointer;
 }
 
@@ -44,34 +204,98 @@ input {
   font-family: inherit;
 }
 
+/* The gradient is pinned to the viewport (like the Figma frame) instead of
+   stretching over the full scroll height. Two layers cross-fade on toggle. */
 .page {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 80% 15%, rgba(80, 150, 220, 0.55) 0%, transparent 45%),
-    linear-gradient(135deg, #0B1957 0%, #12306e 30%, #1B3B6F 55%, #2F6690 100%);
+  color: var(--text-strong);
 }
 
+.page::before,
+.page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.page::before {
+  background: var(--gradient-dark);
+}
+
+.page::after {
+  background: var(--gradient-light);
+  opacity: 0;
+}
+
+.page[data-theme='light']::after {
+  opacity: 1;
+}
+
+/* ---------- Liquid glass surfaces (theme-aware) ---------- */
 .glass-pill {
-  background: rgba(163, 206, 241, 0.22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  color: #fff;
+  background: var(--pill-bg);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid var(--pill-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--pill-text);
+  transition: background 0.2s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Liquid glass: translucent sheen, blur + saturation, a bright top edge,
+   a soft inner rim. Used for cards across the site. */
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--text-strong);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Content panels (verdict, chat, demos) stay readable in both themes */
 .glass-panel {
-  background: rgba(255, 248, 238, 0.94);
+  background: var(--panel-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 12px 40px rgba(11, 25, 87, 0.22);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 12px 40px rgba(11, 25, 87, 0.18);
   color: var(--ink);
+  transition: background 0.3s ease;
 }
 
-.glass-card{
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
+:focus-visible {
+  outline: 2px solid var(--blue-pale);
+  outline-offset: 2px;
+}
+
+.page[data-theme='light'] :focus-visible {
+  outline-color: var(--blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode: the navy search buttons would vanish on ink, so they go cream */
+.page[data-theme='dark'] .search__button,
+.page[data-theme='dark'] .result__search-button {
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.page[data-theme='dark'] .search__button:hover:not(:disabled),
+.page[data-theme='dark'] .result__search-button:hover:not(:disabled) {
+  background: var(--cta-bg-hover);
 }
