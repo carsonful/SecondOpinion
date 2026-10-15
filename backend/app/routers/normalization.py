@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.models.normalization import NormalizedClaim
-from app.services.foundry_normalization import FoundryUnavailableError, normalize_claim
-from app.services.normalization import ClaimNormalizationError
+from app.services.normalization import (
+    ClaimNormalizationError, FoundryUnavailableError, normalize_claim,
+)
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 

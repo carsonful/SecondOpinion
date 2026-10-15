@@ -14,4 +14,4 @@ class NormalizedClaim(BaseModel):
     population: str | None = None
     relation: str
     negated: bool
-    version: Literal["rules-v1", "foundry-v1"] = "rules-v1"
+    version: Literal["foundry-v1"] = "foundry-v1"

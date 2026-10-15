@@ -1,6 +1,6 @@
 """Small functions to fill in independently as the team builds the workflow.
 
-No API calls, persistence, or route changes are wired up here.
+Normalization calls Azure Foundry; scoring and verdicts remain unimplemented.
 See docs/evidence-grading.md for the provisional grading rules.
 """
 

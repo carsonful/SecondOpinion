@@ -142,56 +142,22 @@ Scoring rules, retrieval, API wiring, and migrations remain separate follow-up w
 
 ### Claim normalization (issue #11)
 
-`app.services.normalization.normalize_claim(raw_text)` returns a `NormalizedClaim`
-with `query`, `intervention`, `outcome`, optional `population`, `relation`,
-`negated`, and a rules `version`. For example, `does zinc cure colds lol` produces
-`"zinc" AND "common cold"`. The workflow wrapper returns just the query string
-for compatibility with `Claim.normalized_query`.
+`POST /api/claims/normalize` sends a claim to Azure Foundry and returns
+`query`, `intervention`, `outcome`, `population`, `relation`, `negated`, and
+`version`. It does not decide whether the claim is true.
 
-The local rules support single English effect claims such as “X causes Y” and
-“Does X prevent Y in children?”. They preserve explicit negation in structured
-fields while searching the same terms for positive and negative assertions, so
-retrieval can find evidence on either side. They never assess truth, score
-evidence, or produce verdicts. Call the service directly when downstream code
-needs the assertion's relation and negation.
-
-This initial parser uses a finite health-outcome vocabulary. Non-health input,
-ambiguous negation, compound claims, comparisons, and unsupported phrasing raise
-`ClaimNormalizationError`; rejection does not mean a health claim is false.
-Every accepted or rejected call emits an INFO log with `raw_input`,
-`normalized_output`, and `error` as structured log-record attributes. Applications
-must enable INFO logging and a formatter that includes these attributes to store
-them; the module does not configure global logging or persistence.
-
-`backend/tests/test_normalization.py` contains 20 **provisional** seeds plus
-negation, rejection, logging, and contract tests. The team's canonical seeds were
-not attached to the issue or present in the repository. Tests verify extraction
-offline; live study relevance still needs checking against the canonical set
-before issue #11 can be closed. The Foundry endpoint is described below.
-
-### Azure Foundry normalization
-
-`POST /api/claims/normalize` uses Azure Foundry (no local-rule fallback). Configure
-these in the gitignored `backend/.env`:
+Copy `backend/.env.example` to the gitignored `backend/.env` and configure:
 
 ```dotenv
-AZURE_FOUNDRY_ENDPOINT=https://YOUR-RESOURCE.services.ai.azure.com
-AZURE_FOUNDRY_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+AZURE_FOUNDRY_ENDPOINT=https://YOUR-RESOURCE.openai.azure.com/openai/v1
+AZURE_FOUNDRY_DEPLOYMENT=YOUR-MODEL-DEPLOYMENT-NAME
 AZURE_FOUNDRY_API_KEY=YOUR-RESOURCE-KEY
 ```
 
-Use a deployment supporting [Chat Completions structured outputs](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/structured-outputs).
-The endpoint can also end with `/openai/v1`; a Foundry project URL is not a model
-inference endpoint. Configuration is loaded from `backend/.env` regardless of the
-working directory. Restart the API after changing settings.
-
-To send a live claim directly from the backend directory:
-
-```sh
-.venv/bin/python -m app.services.foundry_normalization 'does zinc cure colds lol'
-```
-
-Or with the backend running:
+Use the **model deployment name**, not the Foundry project name. The deployment
+must support Chat Completions structured outputs. Use the resource URL or its
+`/openai/v1` base, not a project URL or `/responses` URL. Restart the backend
+after changing settings; `.env` loads from `backend/` regardless of working directory.
 
 ```sh
 curl http://localhost:8000/api/claims/normalize \
@@ -199,10 +165,22 @@ curl http://localhost:8000/api/claims/normalize \
   -d '{"raw_text":"does zinc cure colds lol"}'
 ```
 
-The response contains the structured fields above and `version: "foundry-v1"`.
-The model extracts fields; code validates them and builds the query without a
-verdict. Non-health/ambiguous claims return 422; missing configuration, provider
-failures, refusals, and invalid output return 503. Provider error bodies and keys
-are not included in responses or application logs. The earlier local-rule service
-and workflow wrapper remain available for offline use. Foundry tests mock the
-provider; running the CLI with configured credentials is a separate live check.
+This returns a query such as `"zinc" AND "common cold"`. Pass that query to
+`GET /api/pubmed/search`; the frontend does not connect these calls yet.
+
+Code to read, in order:
+
+- `app/routers/normalization.py`: validates requests and maps errors to HTTP status.
+- `app/services/normalization.py`: asks Foundry for fields, validates them, builds the query.
+- `app/models/normalization.py`: the returned data contract.
+
+The workflow's `normalize_claim` wrapper uses the same service and returns only
+the query string. Negation stays in the structured fields, so retrieval can find
+evidence on either side. Invalid claims return 422; configuration/provider errors
+return 503. Each service call logs raw input, normalized output, and errors at
+INFO level; enable a structured formatter to persist those log attributes.
+
+Tests mock Foundry and cover the request, output validation, negation, logging,
+and HTTP errors. `tests/fixtures/normalization_seeds.csv` preserves 20 provisional
+examples for future live evaluation; these are not proof of model accuracy.
+The team's canonical seeds and their retrieval relevance still need validation.
