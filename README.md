@@ -118,8 +118,9 @@ Start with these two files:
 - `backend/app/evidence_models.py`: fields for `Claim`, `Study`, `EvidenceScore`, and `Verdict`. Optional fields explain why they can be unknown.
 - `backend/app/evidence_workflow.py`: `create_claim`, `normalize_claim`, `score_study`, and `generate_verdict`.
 
-`create_claim` works in memory. The other functions deliberately raise
-`NotImplementedError` until their rules are implemented. Edit one function at a
+`create_claim` works in memory. `normalize_claim` returns a search query using
+the retrieval-only normalization service described below. Scoring and verdict
+functions deliberately raise `NotImplementedError`. Edit one function at a
 time; these templates are not connected to API routes or a database.
 
 ```mermaid
@@ -138,3 +139,70 @@ constraints belong in the later migrations.
 Before closing issue #3: agree on the fields and confidence format, post the
 relationship diagram to the issue, and collect all four teammates' approvals.
 Scoring rules, retrieval, API wiring, and migrations remain separate follow-up work.
+
+### Claim normalization (issue #11)
+
+`app.services.normalization.normalize_claim(raw_text)` returns a `NormalizedClaim`
+with `query`, `intervention`, `outcome`, optional `population`, `relation`,
+`negated`, and a rules `version`. For example, `does zinc cure colds lol` produces
+`"zinc" AND "common cold"`. The workflow wrapper returns just the query string
+for compatibility with `Claim.normalized_query`.
+
+The local rules support single English effect claims such as “X causes Y” and
+“Does X prevent Y in children?”. They preserve explicit negation in structured
+fields while searching the same terms for positive and negative assertions, so
+retrieval can find evidence on either side. They never assess truth, score
+evidence, or produce verdicts. Call the service directly when downstream code
+needs the assertion's relation and negation.
+
+This initial parser uses a finite health-outcome vocabulary. Non-health input,
+ambiguous negation, compound claims, comparisons, and unsupported phrasing raise
+`ClaimNormalizationError`; rejection does not mean a health claim is false.
+Every accepted or rejected call emits an INFO log with `raw_input`,
+`normalized_output`, and `error` as structured log-record attributes. Applications
+must enable INFO logging and a formatter that includes these attributes to store
+them; the module does not configure global logging or persistence.
+
+`backend/tests/test_normalization.py` contains 20 **provisional** seeds plus
+negation, rejection, logging, and contract tests. The team's canonical seeds were
+not attached to the issue or present in the repository. Tests verify extraction
+offline; live study relevance still needs checking against the canonical set
+before issue #11 can be closed. The Foundry endpoint is described below.
+
+### Azure Foundry normalization
+
+`POST /api/claims/normalize` uses Azure Foundry (no local-rule fallback). Configure
+these in the gitignored `backend/.env`:
+
+```dotenv
+AZURE_FOUNDRY_ENDPOINT=https://YOUR-RESOURCE.services.ai.azure.com
+AZURE_FOUNDRY_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+AZURE_FOUNDRY_API_KEY=YOUR-RESOURCE-KEY
+```
+
+Use a deployment supporting [Chat Completions structured outputs](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/structured-outputs).
+The endpoint can also end with `/openai/v1`; a Foundry project URL is not a model
+inference endpoint. Configuration is loaded from `backend/.env` regardless of the
+working directory. Restart the API after changing settings.
+
+To send a live claim directly from the backend directory:
+
+```sh
+.venv/bin/python -m app.services.foundry_normalization 'does zinc cure colds lol'
+```
+
+Or with the backend running:
+
+```sh
+curl http://localhost:8000/api/claims/normalize \
+  -H 'Content-Type: application/json' \
+  -d '{"raw_text":"does zinc cure colds lol"}'
+```
+
+The response contains the structured fields above and `version: "foundry-v1"`.
+The model extracts fields; code validates them and builds the query without a
+verdict. Non-health/ambiguous claims return 422; missing configuration, provider
+failures, refusals, and invalid output return 503. Provider error bodies and keys
+are not included in responses or application logs. The earlier local-rule service
+and workflow wrapper remain available for offline use. Foundry tests mock the
+provider; running the CLI with configured credentials is a separate live check.
