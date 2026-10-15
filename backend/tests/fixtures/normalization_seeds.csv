@@ -1,0 +1,21 @@
+claim,intervention,outcome,population,negated
+does zinc cure colds lol,zinc,common cold,,False
+Zinc does not cure colds,zinc,common cold,,True
+Vaccines cause autism,vaccines,autism,,False
+Vaccines don't cause autism,vaccines,autism,,True
+Does vitamin C prevent colds?,vitamin c,common cold,,False
+Vitamin D improves bone health in adults,vitamin d,bone health,adults,False
+Does melatonin improve sleep in children?,melatonin,sleep,children,False
+Exercise reduces depression,exercise,depression,,False
+Meditation helps with anxiety,meditation,anxiety,,False
+Smoking causes lung cancer,smoking,lung cancer,,False
+Coffee increases blood pressure,coffee,blood pressure,,False
+Garlic lowers cholesterol,garlic,cholesterol,,False
+Sugar causes diabetes,sugar,diabetes,,False
+Probiotics improve digestion,probiotics,digestion,,False
+Turmeric reduces arthritis pain,turmeric,arthritis pain,,False
+Flu vaccines prevent influenza in older adults,flu vaccines,influenza,older adults,False
+Magnesium prevents migraine,magnesium,migraine,,False
+Antibiotics cannot cure colds,antibiotics,common cold,,True
+Creatine does not improve sleep in women,creatine,sleep,women,True
+Exercise never causes heart disease,exercise,heart disease,,True

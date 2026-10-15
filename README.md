@@ -118,8 +118,9 @@ Start with these two files:
 - `backend/app/evidence_models.py`: fields for `Claim`, `Study`, `EvidenceScore`, and `Verdict`. Optional fields explain why they can be unknown.
 - `backend/app/evidence_workflow.py`: `create_claim`, `normalize_claim`, `score_study`, and `generate_verdict`.
 
-`create_claim` works in memory. The other functions deliberately raise
-`NotImplementedError` until their rules are implemented. Edit one function at a
+`create_claim` works in memory. `normalize_claim` returns a search query using
+the retrieval-only normalization service described below. Scoring and verdict
+functions deliberately raise `NotImplementedError`. Edit one function at a
 time; these templates are not connected to API routes or a database.
 
 ```mermaid
@@ -138,3 +139,48 @@ constraints belong in the later migrations.
 Before closing issue #3: agree on the fields and confidence format, post the
 relationship diagram to the issue, and collect all four teammates' approvals.
 Scoring rules, retrieval, API wiring, and migrations remain separate follow-up work.
+
+### Claim normalization (issue #11)
+
+`POST /api/claims/normalize` sends a claim to Azure Foundry and returns
+`query`, `intervention`, `outcome`, `population`, `relation`, `negated`, and
+`version`. It does not decide whether the claim is true.
+
+Copy `backend/.env.example` to the gitignored `backend/.env` and configure:
+
+```dotenv
+AZURE_FOUNDRY_ENDPOINT=https://YOUR-RESOURCE.openai.azure.com/openai/v1
+AZURE_FOUNDRY_DEPLOYMENT=YOUR-MODEL-DEPLOYMENT-NAME
+AZURE_FOUNDRY_API_KEY=YOUR-RESOURCE-KEY
+```
+
+Use the **model deployment name**, not the Foundry project name. The deployment
+must support Chat Completions structured outputs. Use the resource URL or its
+`/openai/v1` base, not a project URL or `/responses` URL. Restart the backend
+after changing settings; `.env` loads from `backend/` regardless of working directory.
+
+```sh
+curl http://localhost:8000/api/claims/normalize \
+  -H 'Content-Type: application/json' \
+  -d '{"raw_text":"does zinc cure colds lol"}'
+```
+
+This returns a query such as `"zinc" AND "common cold"`. Pass that query to
+`GET /api/pubmed/search`; the frontend does not connect these calls yet.
+
+Code to read, in order:
+
+- `app/routers/normalization.py`: validates requests and maps errors to HTTP status.
+- `app/services/normalization.py`: asks Foundry for fields, validates them, builds the query.
+- `app/models/normalization.py`: the returned data contract.
+
+The workflow's `normalize_claim` wrapper uses the same service and returns only
+the query string. Negation stays in the structured fields, so retrieval can find
+evidence on either side. Invalid claims return 422; configuration/provider errors
+return 503. Each service call logs raw input, normalized output, and errors at
+INFO level; enable a structured formatter to persist those log attributes.
+
+Tests mock Foundry and cover the request, output validation, negation, logging,
+and HTTP errors. `tests/fixtures/normalization_seeds.csv` preserves 20 provisional
+examples for future live evaluation; these are not proof of model accuracy.
+The team's canonical seeds and their retrieval relevance still need validation.
