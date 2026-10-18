@@ -1,12 +1,13 @@
 """Small functions to fill in independently as the team builds the workflow.
 
-No API calls, persistence, or route changes are wired up here.
+Normalization calls Azure Foundry; scoring and verdicts remain unimplemented.
 See docs/evidence-grading.md for the provisional grading rules.
 """
 
 from collections.abc import Sequence
 
 from app.evidence_models import Claim, EvidenceScore, Study, Verdict
+from app.services.normalization import normalize_claim as normalize_search_claim
 
 
 def create_claim(raw_text: str) -> Claim:
@@ -17,11 +18,11 @@ def create_claim(raw_text: str) -> Claim:
 
 
 def normalize_claim(raw_text: str) -> str:
-    """TODO: turn a claim into a retrieval query without changing its meaning.
+    """Return a retrieval query; use the service directly for structured fields.
 
     The caller will save the returned string in Claim.normalized_query.
     """
-    raise NotImplementedError("Claim normalization is not implemented yet")
+    return normalize_search_claim(raw_text).query
 
 
 def score_study(claim: Claim, study: Study) -> EvidenceScore:

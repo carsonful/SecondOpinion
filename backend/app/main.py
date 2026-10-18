@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import get_settings
-from app.routers import health, pubmed
+from app.routers import health, normalization, pubmed
 from app.services.pubmed import PubMedClient, PubMedResponseError, PubMedUnavailableError
 
 
@@ -44,6 +44,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router, prefix="/api")
     app.include_router(pubmed.router, prefix="/api")
+    app.include_router(normalization.router, prefix="/api")
     return app
 
 
