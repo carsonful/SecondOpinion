@@ -15,8 +15,8 @@ const FEATURES = [
     ),
   },
   {
-    title: 'Evidence grading',
-    description: 'Scores every study by type, sample size, and recency',
+    title: 'Research retrieval',
+    description: 'Finds PubMed studies with abstracts and links to original records',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="4" y="12" width="4" height="8" rx="1" fill="currentColor" />
@@ -27,7 +27,7 @@ const FEATURES = [
   },
   {
     title: 'Retraction checks',
-    description: 'Automatically flags and excludes retracted or unreliable sources',
+    description: 'Displays retraction flags reported in PubMed records',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M6 3v18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

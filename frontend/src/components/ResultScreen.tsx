@@ -1,38 +1,15 @@
 import { FormEvent } from 'react'
-import { Status } from '../hooks/useClaimChecker.ts'
-import { VerdictData } from '../types'
+import { ClaimResult } from '../types'
 import './ResultScreen.css'
 
 interface ResultScreenProps {
-  claim: string
-  verdict: VerdictData
+  result: ClaimResult
   searchValue: string
   onSearchChange: (value: string) => void
   onSearch: (text: string) => void
-  status: Status
-  errorMessage: string
-  onPickRelated: (text: string) => void
 }
 
-function verdictKey(verdict: string) {
-  const v = verdict.toLowerCase()
-  if (v.includes('refut') || v.includes('bust')) return 'refuted'
-  if (v.includes('confirm') || v.includes('support')) return 'confirmed'
-  return 'unproven'
-}
-
-export default function ResultScreen({
-  claim,
-  verdict,
-  searchValue,
-  onSearchChange,
-  onSearch,
-  status,
-  errorMessage,
-  onPickRelated,
-}: ResultScreenProps) {
-  const key = verdictKey(verdict.verdict)
-
+export default function ResultScreen({ result, searchValue, onSearchChange, onSearch }: ResultScreenProps) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     onSearch(searchValue)
@@ -41,81 +18,35 @@ export default function ResultScreen({
   return (
     <section className="result">
       <form className="result__search" onSubmit={handleSubmit}>
-        <input
-          className="result__search-input"
-          type="text"
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder='Try "is raw milk better than pasteurized?"'
-        />
-        <button className="result__search-button" type="submit" disabled={status === 'loading'}>
-          {status === 'loading' ? 'Checking…' : 'Check claim'}
-        </button>
+        <input className="result__search-input" type="text" aria-label="Health claim"
+          maxLength={2000} required value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)} placeholder="Enter another health claim" />
+        <button className="result__search-button" type="submit">Find studies</button>
       </form>
-
-      {status === 'loading' && (
-        <div className="result__status glass-panel" role="status">
-          <span className="result__spinner" aria-hidden="true" />
-          <div>
-            <p className="result__status-title">Checking "{searchValue}"</p>
-            <p className="result__status-sub">Pulling studies and grading the evidence…</p>
-          </div>
+      <h1 className="result__claim">“{result.claim}”</h1>
+      <div className="result__summary glass-panel" role="status">
+        <h2>Assessment pending</h2>
+        <p>These are search results. They have not yet been assessed for whether they support or contradict your claim.</p>
+        <p>Showing {result.evidence.articles.length} of {result.evidence.total_results} PubMed matches.</p>
+        <details><summary>Search details</summary><p>{result.normalized.query}</p></details>
+      </div>
+      {result.evidence.articles.length === 0 && (
+        <div className="result__summary glass-panel">
+          <h2>No studies found</h2>
+          <p>Try specifying the ingredient, treatment, or health outcome. No matches does not establish whether a claim is true or false.</p>
         </div>
       )}
-
-      {status === 'error' && (
-        <div className="result__status result__status--error glass-panel" role="alert">
-          <p className="result__status-title">{errorMessage}</p>
-          <p className="result__status-sub">
-            Try rephrasing with more specific terms, like the ingredient or condition involved.
-          </p>
-        </div>
-      )}
-
-      {status !== 'loading' && (
-        <>
-          <p className="result__claim">"{claim}"</p>
-
-          <div className="result__grid">
-            <div className={`result__verdict glass-panel result__verdict--${key}`}>
-              <span className="result__tag">{verdict.tag}</span>
-              <h2 className="result__label">{verdict.verdict}</h2>
-              <div className="result__confidence">
-                <span>{verdict.confidence} confidence score</span>
-                <span
-                  className="result__info"
-                  title="Calculated from study sample size, type, recency, and whether findings were replicated or retracted."
-                >
-                  ?
-                </span>
-              </div>
-            </div>
-
-            <div className="result__chat glass-panel">
-              <div className="result__chat-avatar">SO</div>
-              <div className="result__chat-bubble">{verdict.chatBody}</div>
-            </div>
-          </div>
-
-          {verdict.relatedClaims && verdict.relatedClaims.length > 0 && (
-            <div className="result__related glass-panel">
-              <p className="result__related-header">📖 Further reading and related claims</p>
-              <div className="result__related-chips">
-                {verdict.relatedClaims.map((text) => (
-                  <button
-                    key={text}
-                    type="button"
-                    className="result__related-chip"
-                    onClick={() => onPickRelated(text)}
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <div className="result__studies">
+        {result.evidence.articles.map((article) => (
+          <article className="result__study glass-panel" key={article.pmid}>
+            <h2><a href={`https://pubmed.ncbi.nlm.nih.gov/${article.pmid}/`} target="_blank" rel="noopener noreferrer">{article.title}</a></h2>
+            <p className="result__metadata">{article.journal ?? 'Journal unavailable'} · {article.year ?? 'Year unavailable'} · PMID {article.pmid}</p>
+            {article.retracted && <p className="result__retracted">Retracted publication — flagged by PubMed.</p>}
+            <p className="result__metadata">{article.publication_types.join(' · ') || 'Publication type unavailable'}</p>
+            {article.abstract ? <details><summary>Read abstract</summary><p className="result__abstract">{article.abstract}</p></details> : <p>Abstract unavailable — limited information.</p>}
+          </article>
+        ))}
+      </div>
     </section>
   )
 }

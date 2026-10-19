@@ -29,19 +29,12 @@ function App() {
       {page === 'how-it-works' && <HowItWorksPage />}
       {page === 'about' && <AboutPage />}
       {page === 'home' &&
-        (checker.verdict ? (
+        (checker.result ? (
           <ResultScreen
-            claim={checker.activeClaim}
-            verdict={checker.verdict}
+            result={checker.result}
             searchValue={checker.claim}
             onSearchChange={checker.setClaim}
             onSearch={checker.checkClaim}
-            status={checker.status}
-            errorMessage={checker.errorMessage}
-            onPickRelated={(text) => {
-              checker.setClaim(text)
-              checker.checkClaim(text)
-            }}
           />
         ) : (
           <SearchScreen

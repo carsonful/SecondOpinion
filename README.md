@@ -75,13 +75,23 @@ Runs on http://localhost:5173 and proxies `/api` requests to the backend.
 | Screen | Component | Notes |
 |---|---|---|
 | Search (home) | `SearchScreen.tsx` | Hero, claim input, example chips, loading/error states, feature cards below the fold |
-| Result | `ResultScreen.tsx` | Verdict card (status, confidence score w/ tooltip) + chatbot-style explanation with sources linked inline, compact search bar to check another claim, related-claims chips |
+| Result | `ResultScreen.tsx` | Retrieved studies, abstracts, PubMed links, retraction flags, assessment-pending status, and another-claim search |
 | How it works | `HowItWorksPage.tsx` | Reuses the 3 feature cards; content to be expanded |
 | About | `AboutPage.tsx` | Placeholder |
 
 Navigation is React state in `App.tsx`, no router installed yet — logo/wordmark click resets to search, nav links switch pages. No real URLs change per page yet; `react-router-dom` is a quick follow-up if shareable links are needed later.
 
-**Backend integration status:** `POST /api/claims` doesn't exist yet, so `useClaimChecker.ts` mocks one claim ("Is raw milk better for you than pasteurized?") from `src/data/mockResults.tsx` to demo the full flow. Any other claim hits the real fetch, gets a 404 from the missing endpoint, and correctly shows the app's error state — expected, not a bug. Once the real endpoint exists, drop the `MOCK_RESULTS` check in `useClaimChecker.ts` and make sure the response shape matches `VerdictData` in `src/types.ts`.
+**Backend integration status:** `POST /api/claims` accepts `{ "claim": "..." }`,
+normalizes the claim through Foundry, and retrieves up to 20 PubMed articles.
+It returns `claim`, `normalized`, `evidence` (query, total count, articles), and
+`assessment_status: "pending"`. The frontend displays real study records and
+abstracts. No verdict or confidence is generated yet. Empty searches return 200
+with an empty article list; invalid claims return 422, and provider failures
+return 502/503. Foundry credentials stay in the backend environment.
+
+Run both development servers using the commands above, then submit a claim in
+the browser. The Vite development proxy forwards `/api` to port 8000. Production
+hosting must also route `/api` to the backend; the Vite proxy is development-only.
 
 Frontend layout:
 
@@ -91,12 +101,10 @@ frontend/src/
   components/
     NavBar.tsx          nav bar, logo/wordmark, page nav
     SearchScreen.tsx     home/search hero + examples + status states
-    ResultScreen.tsx     verdict + chatbot explanation + related claims
+    ResultScreen.tsx     study records + abstracts + source links
     FeatureCards.tsx     claim normalization / evidence grading / retraction checks cards
     HowItWorksPage.tsx
     AboutPage.tsx
-  data/
-    mockResults.tsx      temporary mock verdict data (see above)
   hooks/
     useClaimChecker.ts   shared state + fetch logic for checking a claim
   styles/
@@ -105,7 +113,7 @@ frontend/src/
   App.tsx                page routing (state-based) + top-level layout
 ```
 
-**Known gaps:** real `/api/claims` endpoint (#22), swap out mock data once it's live, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
+**Known gaps:** evidence assessment and verdict generation, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
 
 ## Documentation
 
@@ -166,7 +174,7 @@ curl http://localhost:8000/api/claims/normalize \
 ```
 
 This returns a query such as `(zinc) AND (common cold)`. Pass that query to
-`GET /api/pubmed/search`; the frontend does not connect these calls yet.
+`GET /api/pubmed/search`; the `/api/claims` endpoint combines these steps for the frontend.
 
 Code to read, in order:
 

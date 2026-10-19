@@ -241,3 +241,22 @@
 .result__related-chip:hover {
   background: rgba(47, 102, 144, 0.16);
 }
+
+.result__summary, .result__study {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 18px;
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.result__summary h2, .result__study h2 { margin-top: 0; font-size: 20px; }
+.result__study a { color: var(--navy); }
+.result__metadata { color: var(--ink-soft); font-size: 13px; }
+.result__retracted { font-weight: 700; color: var(--warning); }
+.result__abstract { white-space: pre-line; }
+.result details summary { cursor: pointer; }
+.result__search-input { min-width: 0; }
+@media (max-width: 480px) {
+  .result__search { flex-direction: column; border-radius: var(--radius-md); }
+}

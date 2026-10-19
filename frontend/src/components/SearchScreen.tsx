@@ -35,20 +35,22 @@ export default function SearchScreen({
         <p className="search__eyebrow glass-pill">Busting health myths, backed by science</p>
         <h1 className="search__headline">Is that health claim actually true?</h1>
         <p className="search__subhead">
-          Paste any health claim and get a science-backed verdict, graded evidence, and sources
-          you can trust.
+          Enter a health claim to find relevant research and explore the original sources.
         </p>
 
         <form className="search__form" onSubmit={handleSubmit}>
           <input
             className="search__input"
             type="text"
+            aria-label="Health claim"
+            maxLength={2000}
+            required
             placeholder='Try "is raw milk better than pasteurized?"'
             value={claim}
             onChange={(e) => setClaim(e.target.value)}
           />
           <button className="search__button" type="submit" disabled={status === 'loading'}>
-            {status === 'loading' ? 'Checking…' : 'Check claim'}
+            {status === 'loading' ? 'Searching…' : 'Find studies'}
           </button>
         </form>
 
@@ -72,8 +74,8 @@ export default function SearchScreen({
           <div className="search__status search__status--loading glass-panel" role="status">
             <span className="search__spinner" aria-hidden="true" />
             <div>
-              <p className="search__status-title">Checking "{claim}"</p>
-              <p className="search__status-sub">Pulling studies and grading the evidence…</p>
+              <p className="search__status-title">Searching for "{claim}"</p>
+              <p className="search__status-sub">Finding relevant studies…</p>
             </div>
           </div>
         )}
