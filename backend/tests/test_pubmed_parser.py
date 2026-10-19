@@ -78,3 +78,32 @@ def test_empty_result_set_parses_to_no_articles() -> None:
 def test_malformed_xml_raises() -> None:
     with pytest.raises(PubMedResponseError):
         parse_efetch_xml(b"<PubmedArticleSet><PubmedArticle>")
+
+
+@pytest.mark.parametrize("relation,retracted", [
+    ("RetractionIn", True), ("RetractionOf", False),
+    ("ErratumIn", False), ("ErratumFor", False),
+    ("ExpressionOfConcernIn", False), ("ExpressionOfConcernFor", False),
+])
+def test_integrity_links_keep_direction(relation, retracted):
+    xml = f'''<PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>1</PMID>
+    <Article><ArticleTitle>Study</ArticleTitle></Article>
+    <CommentsCorrectionsList><CommentsCorrections RefType="{relation}">
+    <RefSource>Notice citation</RefSource><PMID>2</PMID><Note>Details</Note>
+    </CommentsCorrections></CommentsCorrectionsList>
+    </MedlineCitation></PubmedArticle></PubmedArticleSet>'''.encode()
+    paper = parse_efetch_xml(xml)[0]
+    assert paper.retracted is retracted
+    assert paper.integrity_links[0].model_dump() == dict(
+        relation=relation, pmid="2", citation="Notice citation", note="Details")
+
+
+def test_integrity_link_without_pmid_and_unrelated_comment():
+    xml = b'''<PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>1</PMID><Article/>
+    <CommentsCorrectionsList><CommentsCorrections RefType="ErratumIn"><RefSource>Correction</RefSource></CommentsCorrections>
+    <CommentsCorrections RefType="CommentIn"><PMID>3</PMID></CommentsCorrections>
+    </CommentsCorrectionsList></MedlineCitation></PubmedArticle></PubmedArticleSet>'''
+    paper = parse_efetch_xml(xml)[0]
+    assert len(paper.integrity_links) == 1
+    assert paper.integrity_links[0].pmid is None
+    assert paper.integrity_links[0].citation == "Correction"

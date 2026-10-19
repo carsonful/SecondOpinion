@@ -1,4 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class IntegrityLink(BaseModel):
+    relation: str
+    pmid: str | None = None
+    citation: str | None = None
+    note: str | None = None
 
 
 class PubMedArticle(BaseModel):
@@ -17,6 +24,7 @@ class PubMedArticle(BaseModel):
     publication_types: list[str]
     mesh_terms: list[str]
     # PubMed's own retraction marker. Crossref (#13) is the authoritative check.
+    integrity_links: list[IntegrityLink] = Field(default_factory=list)
     retracted: bool
     url: str
 

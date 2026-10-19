@@ -13,7 +13,7 @@ from typing import Any
 import httpx2 as httpx
 
 from app.config import Settings
-from app.models.pubmed import PubMedArticle, PubMedSearchResponse
+from app.models.pubmed import IntegrityLink, PubMedArticle, PubMedSearchResponse
 from app.services.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
@@ -217,6 +217,16 @@ def _parse_article(node: ET.Element) -> PubMedArticle:
         pmc_id=article_ids.get("pmc") or None,
         publication_types=publication_types,
         mesh_terms=[_text(m) for m in citation.iterfind("MeshHeadingList/MeshHeading/DescriptorName")],
+        integrity_links=[IntegrityLink(
+            relation=c.get("RefType"),
+            pmid=(_text(c.find("PMID")) if re.fullmatch(r"\d{1,9}", _text(c.find("PMID"))) else None),
+            citation=_text(c.find("RefSource")) or None,
+            note=_text(c.find("Note")) or None,
+        ) for c in citation.iterfind("CommentsCorrectionsList/CommentsCorrections")
+            if c.get("RefType") in {
+                "RetractionIn", "RetractionOf", "ErratumIn", "ErratumFor",
+                "ExpressionOfConcernIn", "ExpressionOfConcernFor",
+            }],
         retracted="Retracted Publication" in publication_types or bool(retraction_notices),
         url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
     )

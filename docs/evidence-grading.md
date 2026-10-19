@@ -110,8 +110,9 @@ in configuration. Store weights centrally when implemented, rather than embeddin
 them in prompts. Record the weight version, resolved design, base weight,
 eligibility reason, and effective weight with each assessment. Changes should
 increment the version and document the rationale so older results stay
-interpretable. These values are documentation only; they do not change runtime
-grading yet.
+interpretable. The initial metadata classifier implements these defaults in
+`backend/app/services/assessment.py`. Abstract-based resolution and eligibility
+for numeric comparison remain unimplemented; effective weights stay zero.
 
 ## Findings: separate from the study grade
 

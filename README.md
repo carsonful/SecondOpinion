@@ -84,8 +84,9 @@ Navigation is React state in `App.tsx`, no router installed yet — logo/wordmar
 **Backend integration status:** `POST /api/claims` accepts `{ "claim": "..." }`,
 normalizes the claim through Foundry, and retrieves up to 20 PubMed articles.
 It returns `claim`, `normalized`, `evidence` (query, total count, articles), and
-`assessment_status: "pending"`. The frontend displays real study records and
-abstracts. No verdict or confidence is generated yet. Empty searches return 200
+`assessment_status: "pending"`, plus `assessments` keyed by PMID. The frontend
+displays study records, abstracts, metadata-based categories, flags, and
+provisional design weights. Relevance and findings remain unassessed. No verdict or confidence is generated yet. Empty searches return 200
 with an empty article list; invalid claims return 422, and provider failures
 return 502/503. Foundry credentials stay in the backend environment.
 
@@ -192,3 +193,62 @@ Tests mock Foundry and cover the request, output validation, negation, logging,
 and HTTP errors. `tests/fixtures/normalization_seeds.csv` preserves 20 provisional
 examples for future live evaluation; these are not proof of model accuracy.
 The team's canonical seeds and their retrieval relevance still need validation.
+
+### Preliminary study classification
+
+`app/services/assessment.py` implements publication-type classification and
+`base_weights_v0.1` from the evidence-grading notes. Specific study designs take
+precedence over generic publication formats; conflicting designs stay unknown.
+Research syntheses retain an unknown weight until included designs are resolved.
+Retraction flags exclude findings; notice records are withheld. Preprints and
+animal-only indexing are marked separately. Missing abstracts retain the design
+weight while flagging limited information. All effective weights remain zero
+until relevance and findings are assessed. No numeric aggregation is performed.
+
+These rules use the retrieved PubMed fields only. Linked corrections/concerns are retained and flagged, but their impact is not
+resolved. Crossref checks and abstract-based design resolution are not implemented yet.
+Foundry finding extraction is available on demand as described below. No notice flag should be read as an integrity clearance.
+
+### Abstract findings
+
+Each study has an **Assess abstract** button. It calls
+`POST /api/claims/articles/{pmid}/assess` with `{ "claim": "..." }`. The backend
+retrieves the article by PMID and asks Foundry for relevance, a finding, a short
+summary, and supporting abstract passages. Exact passages are validated against
+the abstract with whitespace normalization; invalid output returns 503 and can
+be retried. This checks quotation provenance, not whether the model's reasoning
+is correct. Assessments are held in browser memory for the current results only.
+
+Missing abstracts, retracted articles, and integrity-notice records skip Foundry.
+Study weights remain metadata-based; effective weights stay zero while synthesis
+eligibility is unresolved. No overall verdict is generated. Each assessment is
+one additional Foundry call, initiated on demand to keep retrieval responsive.
+
+Linked PubMed integrity records are retained in `integrity_links`, including
+relation direction, notice PMID (when present), citation and note. `RetractionIn`
+marks an affected paper; `RetractionOf` identifies a notice about another paper.
+Linked corrections and expressions of concern withhold findings pending review;
+the application does not yet retrieve notice text or determine its impact.
+
+Abstract assessments also return `sample_sizes` and `effect_estimates`. Each
+contains exact `reported` text and a containing source `passage`, validated
+against the abstract. Empty lists mean no value was reported or identified,
+not zero. Counts are not summed, effects are not converted, and confidence
+intervals are retained when extracted. These values do not change design weights.
+Quote matching verifies provenance, not the correctness of AI interpretation.
+
+If the full normalized query returns no matches, claim retrieval retries once
+with the intervention/exposure alone. `search_scope: "intervention_only"` marks
+these broader results; the UI shows both queries and warns that outcome and
+population relevance are unconfirmed. The full original claim is still used
+for abstract assessment.
+
+Assessment provider request failures return 503. Invalid or unsupported model
+output returns 502, with a retry message. Server logs include PMID, processing
+stage and HTTP status when available, but omit credentials, claims, abstracts
+and provider response bodies.
+
+Measurement extraction is best-effort: sample sizes or effect estimates that
+fail exact-source checks are omitted individually and reported in
+`measurement_warnings`. Valid findings and supporting passages remain available.
+Unsupported main supporting passages still reject the assessment with 502.
