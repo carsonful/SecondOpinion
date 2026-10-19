@@ -165,7 +165,7 @@ curl http://localhost:8000/api/claims/normalize \
   -d '{"raw_text":"does zinc cure colds lol"}'
 ```
 
-This returns a query such as `"zinc" AND "common cold"`. Pass that query to
+This returns a query such as `(zinc) AND (common cold)`. Pass that query to
 `GET /api/pubmed/search`; the frontend does not connect these calls yet.
 
 Code to read, in order:

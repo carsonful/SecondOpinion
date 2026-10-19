@@ -111,7 +111,9 @@ def normalize_claim(
         population = _search_term(extracted.population) if extracted.population is not None else None
         terms = [intervention, outcome] + ([population] if population else [])
         # Search either side of the assertion: never turn negation into NOT.
-        query = " AND ".join(f'"{term}"' for term in terms)
+        # Parentheses rather than quotes: quoting disables PubMed's MeSH term mapping,
+        # so "turmeric" AND "arthritis pain" finds 0 studies while the unquoted form finds 107.
+        query = " AND ".join(f"({term})" for term in terms)
         if len(query) > 500:
             raise FoundryUnavailableError("Foundry returned terms exceeding the PubMed query limit")
         result = NormalizedClaim(
