@@ -65,7 +65,7 @@ def test_foundry_request_and_normalized_output(caplog):
             "does zinc cure colds lol", settings=settings(),
             transport=httpx.MockTransport(handler),
         )
-    assert result.query == '"zinc" AND "common cold"'
+    assert result.query == '(zinc) AND (common cold)'
     assert result.version == "foundry-v1"
     assert result.population is None
     record = next(r for r in caplog.records if r.msg == "claim_normalization")
@@ -77,7 +77,7 @@ def test_negation_and_population():
     data = {**EXTRACTED, "negated": True, "population": "children"}
     result = normalize_response(data)
     assert result.negated
-    assert result.query == '"zinc" AND "common cold" AND "children"'
+    assert result.query == '(zinc) AND (common cold) AND (children)'
 
 
 @pytest.mark.parametrize("body", [
@@ -176,7 +176,7 @@ def test_workflow_uses_same_normalizer(monkeypatch):
     from app.models.normalization import NormalizedClaim
 
     expected = NormalizedClaim(
-        query='"zinc" AND "common cold"', intervention="zinc",
+        query='(zinc) AND (common cold)', intervention="zinc",
         outcome="common cold", relation="cures", negated=False,
     )
     monkeypatch.setattr(evidence_workflow, "normalize_search_claim", lambda raw: expected)
