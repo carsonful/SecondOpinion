@@ -44,6 +44,16 @@ backend/app/
 backend/tests/  # pytest suite
 ```
 
+Endpoints (full schemas at `/docs`):
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Status and API version |
+| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
+| GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
+
+PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
+
 ### Frontend
 
 ```
@@ -102,25 +112,9 @@ frontend/src/
     useClaimChecker.ts    shared state + fetch logic for checking a claim
     useTheme.ts           light/dark mode, remembered per browser
   styles/
-    theme.css             tokens for both themes, gradients, glass classes
-  types.ts                shared types (VerdictData, Source)
-  App.tsx                 page switching + top-level layout
+    theme.css            design tokens, gradient, glass utility classes
+  types.ts               shared TypeScript types
+  App.tsx                page routing (state-based) + top-level layout
 ```
 
-**Recent changes (Oct 13):**
-- Light/dark mode with a capsule toggle; dark mode is now "ink & cream"
-- Gradients rebuilt on the Figma prototype's exact angle and stop positions
-- Liquid-glass styling across the site, driven by theme tokens
-- New "doctor's handwriting" accent font (Homemade Apple) replaces Arizonia
-- Search and result merged into one page, with the result under the search
-- Further reading shown as tabbed referral sheets with real source links
-- Confidence-score "?" tooltip that works on hover, keyboard focus and tap
-- How it works rebuilt as lab clipboards on a capsule tube, demos kept interactive
-- About page built out: Rx pad, team capsules with photos, advisor, GitHub link
-- `ResultScreen` and `FeatureCards` removed (replaced by the above); emojis removed
-
-**Known gaps:**
-- Real `/api/claims` endpoint (#22), returning `sources` for further reading
-- Decide on the confidence score with the team: the result shows a percentage, but `docs/evidence-grading.md` says to avoid confidence percentages
-- Accessibility pass (#28) and usability testing (#27)
-- Router for shareable page links
+**Known gaps:** real `/api/claims` endpoint (#22), swap out mock data once it's live, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
