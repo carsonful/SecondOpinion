@@ -64,41 +64,53 @@ npm run dev
 
 Runs on http://localhost:5173 and proxies `/api` requests to the backend.
 
-**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework — see `src/styles/theme.css` for design tokens). Fonts are Comfortaa (body/UI) and Arizonia (the "Second" script wordmark), loaded via Google Fonts in `index.html`.
+**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework). Design tokens live in `src/styles/theme.css`. Fonts are Comfortaa (body/UI, weights 500–700) and Homemade Apple (the "doctor's handwriting": the "Second" in the logo, "Mythbusters" on About, and handwritten notes), loaded via Google Fonts in `index.html`.
 
 **Design system:**
-- Background is a navy-to-blue diagonal gradient with a radial highlight (`.page` in `theme.css`), matching the Figma prototype
-- Three glassmorphism utility classes: `.glass-pill` (translucent, sits on the gradient — eyebrow badge, chips), `.glass-panel` (near-opaque frosted panel, readable dark text — verdict card, chat bubble, status messages), `.glass-card` (translucent dark card — feature cards)
+- **Light and dark mode.** A sun/moon capsule toggle in the nav bar switches themes. The choice is saved in `localStorage` (`useTheme.ts`); dark is the default.
+- **Gradients.** Both themes use the Figma gradient's angle and stops (114deg, 0 / 19 / 43 / 69 / 88 / 100%). Light mode runs sky blue to cream; dark mode ("ink & cream") is near-black navy with the Figma blue (#125FC9) as soft corner glows. The gradient is pinned to the viewport.
+- **Liquid glass.** `.glass-card`, `.glass-pill` and `.glass-panel` read semantic tokens (`--card-bg`, `--text-strong`, …) defined per theme in `theme.css`, so components never hard-code theme colours.
+- **Dark top, light bottom.** In dark mode, the Search and About pages keep their lower half light (the result area and the team). Those sections set their own light tokens in their CSS, so they stay readable in dark mode no matter what.
+- **Props.** The paper Rx pad, the lab-report clipboards, the foil blister strips and the ink stamps look the same in both themes.
 
 **Pages:**
 
 | Screen | Component | Notes |
 |---|---|---|
-| Search (home) | `SearchScreen.tsx` | Hero, claim input, example chips, loading/error states, feature cards below the fold |
-| Result | `ResultScreen.tsx` | Verdict card (status, confidence score w/ tooltip) + chatbot-style explanation with sources linked inline, compact search bar to check another claim, related-claims chips |
-| How it works | `HowItWorksPage.tsx` | Reuses the 3 feature cards; content to be expanded |
-| About | `AboutPage.tsx` | Placeholder |
+| Search + result (home) | `SearchScreen.tsx`, `result/` | Capsule search bar and example claims. Before a search: the three checks in a foil blister strip. After a search the result appears underneath on the same page: verdict capsule with confidence meter and a "?" tooltip (hover, focus or tap) explaining the score; chat-style explanation with sources linked inline; "Further reading" as tabbed referral sheets on a clipboard, one tab per source, each linking to the original; related claims; a not-medical-advice note. Loading and error states show in the same spot. |
+| How it works | `HowItWorksPage.tsx`, `how/` | A capsule travels down a glass tube past three stations. Each station is a lab-report clipboard holding a working demo (normalize a messy claim, grade a study type, run a retraction scan); an ink stamp (NORMALIZED / GRADED / 1 RETRACTED) lands when you finish it. |
+| About | `AboutPage.tsx` | Hero with a paper Rx pad, project capsule with the verdicts in a foil blister strip and a GitHub link, team as glass capsules with photos and roles, advisor capsule. Team info lives in `src/data/team.ts`; photos in `src/assets/team/` (`carson.jpg`, `nj.jpg`, …) are picked up automatically, with initials as a fallback. |
 
-Navigation is React state in `App.tsx`, no router installed yet — logo/wordmark click resets to search, nav links switch pages. No real URLs change per page yet; `react-router-dom` is a quick follow-up if shareable links are needed later.
+Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
 
-**Backend integration status:** `POST /api/claims` doesn't exist yet, so `useClaimChecker.ts` mocks one claim ("Is raw milk better for you than pasteurized?") from `src/data/mockResults.tsx` to demo the full flow. Any other claim hits the real fetch, gets a 404 from the missing endpoint, and correctly shows the app's error state — expected, not a bug. Once the real endpoint exists, drop the `MOCK_RESULTS` check in `useClaimChecker.ts` and make sure the response shape matches `VerdictData` in `src/types.ts`.
+**Backend integration status:** `POST /api/claims` doesn't exist yet, so `useClaimChecker.ts` mocks one claim ("Is raw milk better for you than pasteurized?") from `src/data/mockResults.tsx`. Its explanation and further-reading tabs link to real, hand-checked sources (CDC, FDA, and a 2011 systematic review on PubMed). Any other claim hits the real fetch and shows the error state, which is expected for now. When the endpoint exists, drop the `MOCK_RESULTS` check and return the `VerdictData` shape from `src/types.ts`, including `sources` (title, publisher, category, takeaway, url, site): each source becomes one further-reading tab.
 
 Frontend layout:
 
 ```
 frontend/src/
-  assets/              logo files
+  assets/
+    team/                team photos for the About page
   components/
-    NavBar.tsx          nav bar, logo/wordmark, page nav
-    SearchScreen.tsx     home/search hero + examples + status states
-    ResultScreen.tsx     verdict + chatbot explanation + related claims
-    FeatureCards.tsx     claim normalization / evidence grading / retraction checks cards
-    HowItWorksPage.tsx
-    AboutPage.tsx
+    NavBar.tsx            logo, page links, theme toggle
+    SearchScreen.tsx      search + result page (dark top, light bottom)
+    result/
+      VerdictResult.tsx   verdict capsule, explanation, related claims
+      ScoreTip.tsx        the "?" tooltip next to the confidence score
+      ReferralTabs.tsx    further reading: tabbed referral sheets
+    HowItWorksPage.tsx    capsule tube + stations
+    how/
+      Clipboard.tsx       lab-report clipboard with an ink stamp
+      NormalizeDemo.tsx   interactive demo: claim normalization
+      GradingDemo.tsx     interactive demo: evidence grading
+      RetractionDemo.tsx  interactive demo: retraction checks
+    AboutPage.tsx         project, team and advisor
   data/
-    mockResults.tsx      temporary mock verdict data (see above)
+    mockResults.tsx       temporary mock verdict data (see above)
+    team.ts               names, roles and blurbs for the About page
   hooks/
-    useClaimChecker.ts   shared state + fetch logic for checking a claim
+    useClaimChecker.ts    shared state + fetch logic for checking a claim
+    useTheme.ts           light/dark mode, remembered per browser
   styles/
     theme.css            design tokens, gradient, glass utility classes
   types.ts               shared TypeScript types
@@ -106,81 +118,3 @@ frontend/src/
 ```
 
 **Known gaps:** real `/api/claims` endpoint (#22), swap out mock data once it's live, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
-
-## Documentation
-
-- [Evidence-grading framework notes](docs/evidence-grading.md)
-
-### Editable backend templates (issue #3)
-
-Start with these two files:
-
-- `backend/app/evidence_models.py`: fields for `Claim`, `Study`, `EvidenceScore`, and `Verdict`. Optional fields explain why they can be unknown.
-- `backend/app/evidence_workflow.py`: `create_claim`, `normalize_claim`, `score_study`, and `generate_verdict`.
-
-`create_claim` works in memory. `normalize_claim` returns a search query using
-the retrieval-only normalization service described below. Scoring and verdict
-functions deliberately raise `NotImplementedError`. Edit one function at a
-time; these templates are not connected to API routes or a database.
-
-```mermaid
-erDiagram
-    Claim ||--o{ EvidenceScore : has
-    Study ||--o{ EvidenceScore : receives
-    Claim ||--o| Verdict : has
-```
-
-A study can be reused across claims, but its score belongs to a specific claim.
-The proposed schema keeps one current verdict per claim. `None` means unknown
-or not assessed; it is different from a score of zero or a checked `False` flag.
-IDs are generated in memory; foreign keys, uniqueness, and other database
-constraints belong in the later migrations.
-
-Before closing issue #3: agree on the fields and confidence format, post the
-relationship diagram to the issue, and collect all four teammates' approvals.
-Scoring rules, retrieval, API wiring, and migrations remain separate follow-up work.
-
-### Claim normalization (issue #11)
-
-`POST /api/claims/normalize` sends a claim to Azure Foundry and returns
-`query`, `intervention`, `outcome`, `population`, `relation`, `negated`, and
-`version`. It does not decide whether the claim is true.
-
-Copy `backend/.env.example` to the gitignored `backend/.env` and configure:
-
-```dotenv
-AZURE_FOUNDRY_ENDPOINT=https://YOUR-RESOURCE.openai.azure.com/openai/v1
-AZURE_FOUNDRY_DEPLOYMENT=YOUR-MODEL-DEPLOYMENT-NAME
-AZURE_FOUNDRY_API_KEY=YOUR-RESOURCE-KEY
-```
-
-Use the **model deployment name**, not the Foundry project name. The deployment
-must support Chat Completions structured outputs. Use the resource URL or its
-`/openai/v1` base, not a project URL or `/responses` URL. Restart the backend
-after changing settings; `.env` loads from `backend/` regardless of working directory.
-
-```sh
-curl http://localhost:8000/api/claims/normalize \
-  -H 'Content-Type: application/json' \
-  -d '{"raw_text":"does zinc cure colds lol"}'
-```
-
-This returns a query such as `(zinc) AND (common cold)`. Pass that query to
-`GET /api/pubmed/search`; the frontend does not connect these calls yet.
-
-Code to read, in order:
-
-- `app/routers/normalization.py`: validates requests and maps errors to HTTP status.
-- `app/services/normalization.py`: asks Foundry for fields, validates them, builds the query.
-- `app/models/normalization.py`: the returned data contract.
-
-The workflow's `normalize_claim` wrapper uses the same service and returns only
-the query string. Negation stays in the structured fields, so retrieval can find
-evidence on either side. Invalid claims return 422; configuration/provider errors
-return 503. Each service call logs raw input, normalized output, and errors at
-INFO level; enable a structured formatter to persist those log attributes.
-
-Tests mock Foundry and cover the request, output validation, negation, logging,
-and HTTP errors. `tests/fixtures/normalization_seeds.csv` preserves 20 provisional
-examples for future live evaluation; these are not proof of model accuracy.
-The team's canonical seeds and their retrieval relevance still need validation.
