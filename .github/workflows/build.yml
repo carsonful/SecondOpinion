@@ -8,6 +8,10 @@ on:
 jobs:
   sonarqube:
     name: SonarQube
+    # GitHub withholds SONAR_TOKEN from pull requests opened from forks, so the scan
+    # can only fail there. Fork changes are scanned on the push to main after merge.
+    # Do not switch to pull_request_target: it would run fork code with the token.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
