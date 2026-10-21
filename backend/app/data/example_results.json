@@ -1,0 +1,122 @@
+{
+  "raw-milk": {
+    "claim": "Is raw milk better for you than pasteurized?",
+    "verdict": "Refuted",
+    "tag": "Busted myth",
+    "confidence": 86,
+    "explanation": [
+      {"text": "Short answer: no. Pasteurization kills harmful bacteria like "},
+      {"text": "E. coli", "emphasis": true},
+      {"text": " and "},
+      {"text": "Listeria", "emphasis": true},
+      {"text": ", and the "},
+      {"text": "CDC", "url": "https://www.cdc.gov/food-safety/foods/raw-milk.html"},
+      {"text": " says pasteurized milk offers the same nutritional benefits without the risks. The "},
+      {"text": "FDA", "url": "https://www.fda.gov/food/buy-store-serve-safe-food/raw-milk-misconceptions-and-danger-raw-milk-consumption"},
+      {"text": " reaches the same conclusion, and a "},
+      {"text": "2011 systematic review", "url": "https://pubmed.ncbi.nlm.nih.gov/22054181/"},
+      {"text": " found pasteurization has little effect on milk’s nutritional value."}
+    ],
+    "sources": [
+      {
+        "title": "A systematic review and meta-analysis of the effects of pasteurization on milk vitamins",
+        "publisher": "Journal of Food Protection · 2011",
+        "category": "Research synthesis",
+        "takeaway": "Pasteurization has little effect on milk’s nutritional value.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/22054181/",
+        "site": "PubMed"
+      },
+      {
+        "title": "Raw Milk Misconceptions and the Danger of Raw Milk Consumption",
+        "publisher": "U.S. Food & Drug Administration",
+        "category": "Public health guidance",
+        "takeaway": "Raw milk is not nutritionally superior to pasteurized milk.",
+        "url": "https://www.fda.gov/food/buy-store-serve-safe-food/raw-milk-misconceptions-and-danger-raw-milk-consumption",
+        "site": "fda.gov"
+      },
+      {
+        "title": "Raw Milk",
+        "publisher": "Centers for Disease Control and Prevention",
+        "category": "Public health guidance",
+        "takeaway": "Pasteurized milk offers the same nutritional benefits without the risks.",
+        "url": "https://www.cdc.gov/food-safety/foods/raw-milk.html",
+        "site": "cdc.gov"
+      }
+    ],
+    "relatedClaims": [
+      "Does raw milk have more probiotics?",
+      "Is organic milk healthier than regular milk?",
+      "Do grass-fed cows produce better milk?"
+    ]
+  },
+  "cold-showers": {
+    "claim": "Do cold showers boost your immune system?",
+    "verdict": "Unverified",
+    "tag": "Evidence is mixed",
+    "confidence": 62,
+    "explanation": [
+      {"text": "There is no clear evidence that cold showers strengthen immune function. A "},
+      {"text": "2016 randomized trial", "url": "https://pubmed.ncbi.nlm.nih.gov/27631616/"},
+      {"text": " found fewer self-reported days off work, but no significant reduction in illness days. A "},
+      {"text": "2025 review", "url": "https://pubmed.ncbi.nlm.nih.gov/39879231/"},
+      {"text": " found no significant immediate change in measured immune function after cold-water exposure. Those findings do not establish an immune-system boost."}
+    ],
+    "sources": [
+      {
+        "title": "The Effect of Cold Showering on Health and Work: A Randomized Controlled Trial",
+        "publisher": "PLOS ONE · 2016",
+        "category": "Randomized trial",
+        "takeaway": "Cold showering reduced self-reported sickness absence, but not illness days.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/27631616/",
+        "site": "PubMed"
+      },
+      {
+        "title": "Effects of cold-water immersion on health and wellbeing: A systematic review and meta-analysis",
+        "publisher": "PLOS ONE · 2025",
+        "category": "Research synthesis",
+        "takeaway": "Pooled trials found no significant immediate immune-function effect.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39879231/",
+        "site": "PubMed"
+      }
+    ],
+    "relatedClaims": [
+      "Do ice baths help prevent colds?",
+      "Can cold exposure reduce inflammation?"
+    ]
+  },
+  "cracking-knuckles": {
+    "claim": "Does cracking your knuckles cause arthritis?",
+    "verdict": "Refuted",
+    "tag": "Busted myth",
+    "confidence": 75,
+    "explanation": [
+      {"text": "Studies have not found a link between habitual knuckle cracking and hand osteoarthritis. In a "},
+      {"text": "2011 study", "url": "https://pubmed.ncbi.nlm.nih.gov/21383216/"},
+      {"text": ", arthritis was similarly common in people who cracked their knuckles and those who did not. A "},
+      {"text": "2017 examination study", "url": "https://pubmed.ncbi.nlm.nih.gov/28050816/"},
+      {"text": " found no immediate swelling or loss of hand function after cracking. These studies are limited, so they cannot rule out every long-term effect."}
+    ],
+    "sources": [
+      {
+        "title": "Knuckle cracking and hand osteoarthritis",
+        "publisher": "Journal of the American Board of Family Medicine · 2011",
+        "category": "Observational study",
+        "takeaway": "Hand osteoarthritis prevalence was similar in habitual crackers and non-crackers.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/21383216/",
+        "site": "PubMed"
+      },
+      {
+        "title": "\"Knuckle Cracking\": Can Blinded Observers Detect Changes with Physical Examination and Sonography?",
+        "publisher": "Clinical Orthopaedics and Related Research · 2017",
+        "category": "Clinical study",
+        "takeaway": "No immediate adverse examination findings were detected; long-term outcomes remain untested.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/28050816/",
+        "site": "PubMed"
+      }
+    ],
+    "relatedClaims": [
+      "Can cracking your knuckles damage cartilage?",
+      "Does knuckle cracking weaken your grip?"
+    ]
+  }
+}

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     azure_foundry_endpoint: str | None = None
     azure_foundry_deployment: str | None = None
     azure_foundry_api_key: SecretStr | None = None
+    database_url: SecretStr | None = None
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]

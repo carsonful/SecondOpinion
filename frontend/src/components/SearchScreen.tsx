@@ -1,14 +1,9 @@
 import { FormEvent, useEffect, useRef } from 'react'
 import { Status } from '../hooks/useClaimChecker'
 import { VerdictData } from '../types'
+import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
 import VerdictResult from './result/VerdictResult'
 import './SearchScreen.css'
-
-const EXAMPLE_CLAIMS = [
-  'Is raw milk better for you than pasteurized?',
-  'Do cold showers boost your immune system?',
-  'Does cracking your knuckles cause arthritis?',
-]
 
 const CAP_COLORS = [
   'linear-gradient(135deg,#3d8ed6,#2a6cb8)',
@@ -66,7 +61,7 @@ export default function SearchScreen({
   }
 
   const examples = EXAMPLE_CLAIMS.filter(
-    (c) => !(showResult && c.toLowerCase() === activeClaim.toLowerCase()),
+    ({ claim: text }) => !(showResult && text.toLowerCase() === activeClaim.toLowerCase()),
   )
 
   return (
@@ -105,15 +100,15 @@ export default function SearchScreen({
 
           <div className="search__examples">
             <span className="search__hand search__hand--top">{showResult ? 'try another:' : 'or try one:'}</span>
-            {examples.map((text) => (
+            {examples.map(({ slug, claim: text }) => (
               <button
-                key={text}
+                key={slug}
                 type="button"
                 className="search__chip search__chip--top"
                 onClick={() => pick(text)}
               >
                 <span>{text}</span>
-                <span style={{ background: CAP_COLORS[EXAMPLE_CLAIMS.indexOf(text)] }} />
+                <span style={{ background: CAP_COLORS[EXAMPLE_CLAIMS.findIndex((item) => item.slug === slug)] }} />
               </button>
             ))}
           </div>
@@ -127,7 +122,7 @@ export default function SearchScreen({
               <span className="search__spinner" aria-hidden="true" />
               <div>
                 <p className="search__status-title">Checking “{claim}”</p>
-                <p className="search__status-sub">Pulling studies and grading the evidence…</p>
+                <p className="search__status-sub">Preparing your result…</p>
               </div>
             </div>
           )}
@@ -142,7 +137,7 @@ export default function SearchScreen({
           )}
 
           {showResult && verdict && (
-            <VerdictResult verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
+            <VerdictResult key={activeClaim} verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
           )}
 
           {status === 'idle' && (
