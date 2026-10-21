@@ -8,12 +8,14 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import get_settings
-from app.routers import health, normalization, pubmed
+from app.routers import examples, health, normalization, pubmed
+from app.services.examples import initialize_examples
 from app.services.pubmed import PubMedClient, PubMedResponseError, PubMedUnavailableError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    initialize_examples()
     # One shared client per process, so every request goes through the same rate limiter.
     async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as http_client:
         app.state.pubmed_client = PubMedClient.from_settings(get_settings(), http_client)
@@ -45,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api")
     app.include_router(pubmed.router, prefix="/api")
     app.include_router(normalization.router, prefix="/api")
+    app.include_router(examples.router, prefix="/api")
     return app
 
 

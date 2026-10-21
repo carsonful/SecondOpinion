@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VerdictData } from '../types'
-import { MOCK_RESULTS } from '../data/mockResults'
+import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
+import { hydrateExample } from '../data/hydrateExample'
 
 export type Status = 'idle' | 'loading' | 'error' | 'success'
 
@@ -18,27 +19,24 @@ export function useClaimChecker() {
     setStatus('loading')
     setErrorMessage('')
 
-    const mock = MOCK_RESULTS[trimmed.toLowerCase()]
-    if (mock) {
-      await new Promise((resolve) => setTimeout(resolve, 900))
-      setStatus('success')
-      setActiveClaim(trimmed)
-      setVerdict(mock)
-      return
-    }
+    const example = EXAMPLE_CLAIMS.find(({ claim }) => claim.toLowerCase() === trimmed.toLowerCase())
 
     try {
-      const res = await fetch('/api/claims', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claim: trimmed }),
-      })
+      const res = example
+        ? await fetch(`/api/examples/${example.slug}`)
+        : await fetch('/api/claims', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ claim: trimmed }),
+          })
 
       if (!res.ok) {
         setErrorMessage(
-          res.status === 404
-            ? 'No studies matched this claim.'
-            : 'Something went wrong on our end. Try again in a moment.'
+          example
+            ? 'This saved example is unavailable right now. Try again in a moment.'
+            : res.status === 404
+              ? 'No studies matched this claim.'
+              : 'Something went wrong on our end. Try again in a moment.'
         )
         setStatus('error')
         return
@@ -47,7 +45,7 @@ export function useClaimChecker() {
       const data = await res.json()
       setStatus('success')
       setActiveClaim(trimmed)
-      setVerdict(data)
+      setVerdict(example ? hydrateExample(data) : data)
     } catch {
       setErrorMessage("Can't reach the server right now.")
       setStatus('error')

@@ -24,6 +24,12 @@ Runs on http://localhost:8000. Health check at `/api/health`. API docs at `/docs
 
 Credentials and optional settings go in `backend/.env` (see `backend/.env.example`).
 
+Saved demo results require PostgreSQL. Set `DATABASE_URL` in `backend/.env` to a
+PostgreSQL connection string. Backend startup creates the `example_results` table
+and inserts the three examples automatically. The saved verdicts and confidence
+scores are curated demo content. They do not come from the unfinished live
+evidence-grading pipeline. Loading an example does not call Azure Foundry or PubMed.
+
 To run the tests:
 
 ```
@@ -51,6 +57,7 @@ Endpoints (full schemas at `/docs`):
 | GET | `/api/health` | Status and API version |
 | GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
 | GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
+| GET | `/api/examples/{slug}` | PostgreSQL result for `raw-milk`, `cold-showers`, or `cracking-knuckles` |
 
 PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
 
@@ -83,7 +90,12 @@ Runs on http://localhost:5173 and proxies `/api` requests to the backend.
 
 Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
 
-**Backend integration status:** `POST /api/claims` doesn't exist yet, so `useClaimChecker.ts` mocks one claim ("Is raw milk better for you than pasteurized?") from `src/data/mockResults.tsx`. Its explanation and further-reading tabs link to real, hand-checked sources (CDC, FDA, and a 2011 systematic review on PubMed). Any other claim hits the real fetch and shows the error state, which is expected for now. When the endpoint exists, drop the `MOCK_RESULTS` check and return the `VerdictData` shape from `src/types.ts`, including `sources` (title, publisher, category, takeaway, url, site): each source becomes one further-reading tab.
+**Backend integration status:** The three example claims fetch saved results through
+`GET /api/examples/{slug}`. JSON explanation segments become React text and links
+in the existing result display. Manually entered claims continue to use
+`POST /api/claims`; that endpoint does not exist yet, so other claims show the
+existing error state. Typing one of the three exact example claims also retrieves
+its saved result.
 
 Frontend layout:
 
@@ -106,7 +118,8 @@ frontend/src/
       RetractionDemo.tsx  interactive demo: retraction checks
     AboutPage.tsx         project, team and advisor
   data/
-    mockResults.tsx       temporary mock verdict data (see above)
+    exampleClaims.ts      labels and slugs for saved examples
+    hydrateExample.tsx    renders JSON explanation segments as React content
     team.ts               names, roles and blurbs for the About page
   hooks/
     useClaimChecker.ts    shared state + fetch logic for checking a claim
@@ -117,4 +130,4 @@ frontend/src/
   App.tsx                page routing (state-based) + top-level layout
 ```
 
-**Known gaps:** real `/api/claims` endpoint (#22), swap out mock data once it's live, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
+**Known gaps:** real `/api/claims` endpoint (#22), expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
