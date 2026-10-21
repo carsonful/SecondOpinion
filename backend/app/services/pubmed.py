@@ -70,6 +70,10 @@ class PubMedClient:
         self._limiter = rate_limiter or RateLimiter(RATE_WITH_KEY if api_key else RATE_WITHOUT_KEY)
         self._sleep = sleep
 
+    @property
+    def rate_limiter(self) -> RateLimiter:
+        return self._limiter
+
     @classmethod
     def from_settings(cls, settings: Settings, http_client: httpx.AsyncClient) -> "PubMedClient":
         return cls(

@@ -9,9 +9,12 @@ from pydantic import BaseModel, ConfigDict
 
 from app.config import Settings, get_settings
 from app.models.assessment import ReportedMeasure, StudyAssessment
+from app.models.full_text import FullTextRecord
 from app.models.pubmed import PubMedArticle
 from app.services.assessment import assess_metadata
+from app.services.full_text import abstract_record
 from app.services.normalization import FoundryUnavailableError
+from app.services.study_payload import StudyPayload, build_study_payload
 
 
 logger = logging.getLogger(__name__)
@@ -66,21 +69,49 @@ These are reported measurements, not quality scores.
 """
 
 
+FULL_TEXT_PROMPT = PROMPT.replace("abstract", "article text") + """
+The study is given as labeled sections (abstract, methods, results, limitations);
+sections marked [truncated] were shortened to fit. Read the methods, results and
+limitations. Distinguish this study's own findings from cited background studies.
+Tables are rendered as text; do not infer values from missing images or supplementary files.
+"""
+
+COVERAGE_PROMPT = """
+evidence_coverage says how many of this claim's studies were read in full text versus
+abstract only. Use it as context for how complete the evidence base is; it is not a finding.
+"""
+
+COVERAGE_NOTES = {
+    "pmc_fulltext": "PMC full text: abstract, methods, results and limitations sections. Figure images, external supplements and reference lists are not assessed.",
+    "oa_pdf": "Open-access PDF parsed into sections: abstract, methods, results and limitations. Figure images and external supplements are not assessed.",
+    "abstract_only": "PubMed abstract only; no open-access full text was found.",
+}
+
+
 def assess_abstract(
     claim: str, article: PubMedArticle, *, settings: Settings | None = None,
     transport: httpx.BaseTransport | None = None,
     full_text: str | None = None,
+    record: FullTextRecord | None = None,
+    coverage: str | None = None,
 ) -> StudyAssessment:
+    """Assess one study. full_text is an uploaded document's text; otherwise the
+    study's full-text record is sent as sections (its abstract when none is given)."""
     result = assess_metadata(article)
-    source_text = full_text if full_text is not None else article.abstract
-    basis = "full_text" if full_text is not None else "abstract"
-    label = "Full study text" if full_text is not None else "Abstract"
+    settings = settings or get_settings()
+    payload = None
+    if full_text is not None:
+        source_text, basis = full_text, "full_text"
+    else:
+        payload = build_study_payload(record or abstract_record(article), settings.study_token_budget)
+        source_text = payload.source_text
+        basis = "abstract" if payload.content["source_tier"] == "abstract_only" else "full_text"
+    label = "Full study text" if basis == "full_text" else "Abstract"
     if not source_text or not source_text.strip():
         return result.model_copy(update={"assessment_status": "unavailable",
                                          "coverage_note": "No source text is available for this assessment. No model call was made."})
     if result.eligibility == "excluded" or any("Integrity notice" in flag for flag in result.flags):
         return result.model_copy(update={"assessment_status": "skipped"})
-    settings = settings or get_settings()
     if not all((settings.azure_foundry_endpoint, settings.azure_foundry_deployment, settings.azure_foundry_api_key)):
         raise FoundryUnavailableError("Foundry is unavailable")
     stage = "configuration"
@@ -98,10 +129,9 @@ def assess_abstract(
             }, json={
                 "model": settings.azure_foundry_deployment,
                 "messages": [
-                    {"role": "system", "content": PROMPT if full_text is None else PROMPT.replace("abstract", "article text") + "\nRead the methods, results and limitations. Distinguish this study’s own findings from cited background studies. Tables are rendered as text; do not infer values from missing images or supplementary files."},
-                    {"role": "user", "content": json.dumps({
-                        "claim": claim, "title": article.title, basis: source_text,
-                    })},
+                    {"role": "system", "content": (PROMPT if basis == "abstract" else FULL_TEXT_PROMPT)
+                        + (COVERAGE_PROMPT if coverage else "")},
+                    {"role": "user", "content": json.dumps(_user_content(claim, article, source_text, payload, coverage))},
                 ],
                 "response_format": {"type": "json_schema", "json_schema": {
                     "name": "abstract_finding", "strict": True,
@@ -165,9 +195,9 @@ def assess_abstract(
         raise AssessmentOutputError("Study assessment output could not be verified") from None
 
     updates = {**finding.model_dump(), "assessment_status": "completed",
-               "measurement_warnings": measurement_warnings, "assessment_basis": basis,
-               "source_url": f"https://pmc.ncbi.nlm.nih.gov/articles/{article.pmc_id}/" if full_text is not None else article.url,
-               "coverage_note": "PMC article body and abstract, including text tables and captions. Figure images, external supplements and reference lists are not assessed." if full_text is not None else "PubMed abstract only."}
+               "measurement_warnings": measurement_warnings, "assessment_basis": basis}
+    if payload is not None:
+        updates.update(_source_fields(article, record or abstract_record(article), payload.truncated))
     if finding.relevance == "not_relevant":
         updates.update(eligibility="excluded", eligibility_reason=f"{label} does not address this claim.")
     elif any(link.relation in {"ErratumIn", "ExpressionOfConcernIn"} for link in article.integrity_links):
@@ -179,3 +209,33 @@ def assess_abstract(
     # Keep effective weights at zero: abstract extraction alone does not establish
     # comparability, overlap, integrity clearance, or applicability of these defaults.
     return StudyAssessment.model_validate({**result.model_dump(), **updates})
+
+
+def _user_content(
+    claim: str, article: PubMedArticle, source_text: str, payload: StudyPayload | None, coverage: str | None,
+) -> dict:
+    if payload is None:  # An uploaded document's text.
+        content = {"claim": claim, "title": article.title, "full_text": source_text}
+    elif payload.content["source_tier"] == "abstract_only":
+        content = {"claim": claim, "title": article.title, "abstract": source_text,
+                   "publication_types": article.publication_types, "source_tier": "abstract_only"}
+    else:
+        content = {"claim": claim, "study": payload.content}
+    if coverage:
+        content["evidence_coverage"] = coverage
+    return content
+
+
+def _source_fields(article: PubMedArticle, record: FullTextRecord, truncated: list[str]) -> dict:
+    note = COVERAGE_NOTES[record.source_tier]
+    if truncated:
+        note += f" Shortened to fit the prompt: {', '.join(truncated)}."
+    fields = {"source_tier": record.source_tier, "license": record.license, "coverage_note": note}
+    if record.source_tier == "pmc_fulltext":
+        fields.update(source_kind="pmc", source_url=f"https://pmc.ncbi.nlm.nih.gov/articles/{record.pmcid}/")
+    elif record.source_tier == "oa_pdf":
+        fields.update(source_kind="downloaded_pdf",
+                      source_url=f"https://doi.org/{record.doi}" if record.doi else article.url)
+    else:
+        fields["source_url"] = article.url
+    return fields

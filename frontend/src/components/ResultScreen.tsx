@@ -6,7 +6,7 @@ interface ResultScreenProps {
   result: ClaimResult
 }
 
-function Assessment({ initial, claim, hasAbstract }: { initial: StudyAssessment; claim: string; hasAbstract: boolean }) {
+function Assessment({ initial, claim, hasAbstract, studyPmids }: { initial: StudyAssessment; claim: string; hasAbstract: boolean; studyPmids: string[] }) {
   const [assessment, setAssessment] = useState(initial)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,7 +33,7 @@ function Assessment({ initial, claim, hasAbstract }: { initial: StudyAssessment;
       const response = await fetch(`/api/claims/articles/${initial.pmid}/${upload ? 'assess-pdf' : nextMode === 'abstract' ? 'assess' : 'assess-full-text'}`, {
         method: 'POST',
         headers: upload ? undefined : { 'Content-Type': 'application/json' },
-        body: upload ? form : JSON.stringify({ claim }), signal: request.signal,
+        body: upload ? form : JSON.stringify({ claim, study_pmids: studyPmids }), signal: request.signal,
       })
       if (!response.ok) {
         const failure = await response.json().catch(() => ({}))
@@ -61,7 +61,7 @@ function Assessment({ initial, claim, hasAbstract }: { initial: StudyAssessment;
       <p><strong>{assessment.category}</strong></p>
       {notice && <p role="status">{notice}</p>}
       {assessment.coverage_note && <p role="status">{assessment.coverage_note}</p>}
-      {assessment.assessment_basis && <p>Assessment source: {assessment.assessment_basis === 'full_text' ? ({ pmc: 'PMC article text', publisher_html: 'Publisher/repository HTML', downloaded_pdf: 'Downloaded PDF', uploaded_pdf: 'Uploaded PDF' }[assessment.source_kind ?? 'pmc']) : 'PubMed abstract only'}.
+      {assessment.assessment_basis && <p>Assessment source: {assessment.assessment_basis === 'full_text' ? ({ pmc: 'PMC article text', downloaded_pdf: 'Open-access PDF', uploaded_pdf: 'Uploaded PDF' }[assessment.source_kind ?? 'pmc']) : 'PubMed abstract only'}.
         {assessment.source_url && <> <a href={assessment.source_url} target="_blank" rel="noopener noreferrer">Read source</a></>}
       </p>}
       {assessment.assessment_status === 'completed' ? <>
@@ -86,7 +86,7 @@ function Assessment({ initial, claim, hasAbstract }: { initial: StudyAssessment;
       {initial.eligibility !== 'excluded' && !initial.flags.some(flag => flag.includes('Integrity notice')) && <>
         {assessment.assessment_status !== 'completed' && <>
           <button type="button" className="result__related-chip" disabled={loading || !hasAbstract} onClick={() => assess()}>
-            {loading && mode === 'abstract' ? 'Assessing abstract…' : 'Assess abstract'}
+            {loading && mode === 'abstract' ? 'Assessing study…' : 'Assess study'}
           </button>
           {!hasAbstract && <p>No abstract is available for this study. You can try full-text review below.</p>}
         </>}
@@ -133,8 +133,9 @@ export default function ResultScreen({ result }: ResultScreenProps) {
       <h1 className="result__claim">“{result.claim}”</h1>
       <div className="result__summary glass-panel" role="status">
         <h2>Explore study findings</h2>
-        <p>Study categories are based on PubMed metadata. Choose “Assess abstract” to review reported study information, results and relevance. Full-text review is optional. An overall verdict is not available yet.</p>
+        <p>Study categories are based on PubMed metadata. Choose “Assess study” to review reported study information, results and relevance. It uses open-access full text when available and the abstract otherwise. An overall verdict is not available yet.</p>
         <p>Showing {result.evidence.articles.length} of {result.evidence.total_results} PubMed matches, ordered by PubMed relevance (up to 5 studies).</p>
+        {result.full_text_coverage && <p>{result.full_text_coverage}</p>}
         {result.search_scope === 'intervention_only' && <p>
           No matches were found for the full claim. These broader results cover the intervention or exposure and may not address your health outcome or population.
         </p>}
@@ -168,7 +169,7 @@ export default function ResultScreen({ result }: ResultScreenProps) {
               <p>Linked corrections and concerns require review; their impact has not been resolved.</p>
             </div>}
             <p className="result__metadata">{article.publication_types.join(' · ') || 'Publication type unavailable'}</p>
-            {assessments.has(article.pmid) && <Assessment key={`${result.claim}:${article.pmid}`} initial={assessments.get(article.pmid)!} claim={result.claim} hasAbstract={Boolean(article.abstract?.trim())} />}
+            {assessments.has(article.pmid) && <Assessment key={`${result.claim}:${article.pmid}`} initial={assessments.get(article.pmid)!} claim={result.claim} hasAbstract={Boolean(article.abstract?.trim())} studyPmids={result.evidence.articles.map(item => item.pmid)} />}
             {article.abstract ? <details><summary>Read abstract</summary><p className="result__abstract">{article.abstract}</p></details> : <p>Abstract unavailable — limited information.</p>}
           </article>
         ))}

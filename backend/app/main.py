@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.config import get_settings
 from app.routers import claims, health, normalization, pubmed
+from app.services.full_text import FullTextRetriever
 from app.services.pubmed import PubMedClient, PubMedResponseError, PubMedUnavailableError
 
 
@@ -16,7 +17,12 @@ from app.services.pubmed import PubMedClient, PubMedResponseError, PubMedUnavail
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # One shared client per process, so every request goes through the same rate limiter.
     async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as http_client:
-        app.state.pubmed_client = PubMedClient.from_settings(get_settings(), http_client)
+        settings = get_settings()
+        app.state.pubmed_client = PubMedClient.from_settings(settings, http_client)
+        # Shares the PubMed client's limiter: NCBI counts all of our requests together.
+        app.state.full_text_retriever = FullTextRetriever.from_settings(
+            settings, http_client, app.state.pubmed_client.rate_limiter
+        )
         yield
 
 

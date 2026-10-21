@@ -133,3 +133,16 @@ def test_broader_search_outage_is_not_an_empty_success(setup):
         PubMedUnavailableError("offline"),
     ])
     assert api.post("/api/claims", json={"claim": "zinc cures colds"}).status_code == 503
+
+
+def test_claim_resolves_full_text_and_reports_coverage(setup, full_text_retriever):
+    api, _, _ = setup
+    response = api.post("/api/claims", json={"claim": "zinc cures colds"})
+    assert response.status_code == 200
+    body = response.json()
+    pmids = [item["pmid"] for item in body["evidence"]["articles"]]
+    assert set(full_text_retriever.records) == set(pmids)
+    assert {item["source_tier"] for item in body["assessments"]} == {"abstract_only"}
+    assert body["full_text_coverage"] == (
+        f"0 of {len(pmids)} studies were read in full text; {len(pmids)} were abstract only."
+    )
