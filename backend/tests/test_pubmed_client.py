@@ -49,7 +49,7 @@ async def test_search_sends_identification_and_paging_params() -> None:
     await make_client(ncbi, api_key="secret-key").search("zinc common cold", limit=3)
 
     params = ncbi.calls_to("esearch.fcgi")[0].url.params
-    assert params["term"] == "zinc common cold"
+    assert params["term"] == "(zinc common cold) AND hasabstract[filter]"
     assert params["retmax"] == "3"
     assert params["tool"] == "SecondOpinion"
     assert params["email"] == "team@example.com"
