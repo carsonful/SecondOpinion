@@ -64,29 +64,31 @@ npm run dev
 
 Runs on http://localhost:5173 and proxies `/api` requests to the backend.
 
-**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework — see `src/styles/theme.css` for design tokens). Fonts are Comfortaa (body/UI) and Arizonia (the "Second" script wordmark), loaded via Google Fonts in `index.html`.
+**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework). Design tokens live in `src/styles/theme.css`. Fonts are Comfortaa (body/UI, weights 500–700) and Homemade Apple (the "doctor's handwriting": the "Second" in the logo, "Mythbusters" on About, and handwritten notes), loaded via Google Fonts in `index.html`.
 
 **Design system:**
-- Background is a navy-to-blue diagonal gradient with a radial highlight (`.page` in `theme.css`), matching the Figma prototype
-- Three glassmorphism utility classes: `.glass-pill` (translucent, sits on the gradient — eyebrow badge, chips), `.glass-panel` (near-opaque frosted panel, readable dark text — verdict card, chat bubble, status messages), `.glass-card` (translucent dark card — feature cards)
+- **Light and dark mode.** A sun/moon capsule toggle in the nav bar switches themes. The choice is saved in `localStorage` (`useTheme.ts`); dark is the default.
+- **Gradients.** Both themes use the Figma gradient's angle and stops (114deg, 0 / 19 / 43 / 69 / 88 / 100%). Light mode runs sky blue to cream; dark mode ("ink & cream") is near-black navy with the Figma blue (#125FC9) as soft corner glows. The gradient is pinned to the viewport.
+- **Liquid glass.** `.glass-card`, `.glass-pill` and `.glass-panel` read semantic tokens (`--card-bg`, `--text-strong`, …) defined per theme in `theme.css`, so components never hard-code theme colours.
+- **Dark top, light bottom.** In dark mode, the Search and About pages keep their lower half light (the result area and the team). Those sections set their own light tokens in their CSS, so they stay readable in dark mode no matter what.
+- **Props.** The paper Rx pad, the lab-report clipboards, the foil blister strips and the ink stamps look the same in both themes.
 
 **Pages:**
 
 | Screen | Component | Notes |
 |---|---|---|
-| Search (home) | `SearchScreen.tsx` | Hero, claim input, example chips, loading/error states, feature cards below the fold |
-| Result | `ResultScreen.tsx` | Retrieved studies, abstracts, PubMed links, retraction flags, assessment-pending status, and another-claim search |
-| How it works | `HowItWorksPage.tsx` | Reuses the 3 feature cards; content to be expanded |
-| About | `AboutPage.tsx` | Placeholder |
+| Search + result (home) | `SearchScreen.tsx`, `ResultScreen.tsx` | Capsule search bar, example claims, loading/error states, and live PubMed results below. Study records include abstracts, integrity flags, and on-demand assessments. |
+| How it works | `HowItWorksPage.tsx`, `how/` | A capsule travels down a glass tube past three stations. Each station is a lab-report clipboard holding a working demo (normalize a messy claim, grade a study type, run a retraction scan); an ink stamp (NORMALIZED / GRADED / 1 RETRACTED) lands when you finish it. |
+| About | `AboutPage.tsx` | Hero with a paper Rx pad, project capsule with the verdicts in a foil blister strip and a GitHub link, team as glass capsules with photos and roles, advisor capsule. Team info lives in `src/data/team.ts`; photos in `src/assets/team/` (`carson.jpg`, `nj.jpg`, …) are picked up automatically, with initials as a fallback. |
 
-Navigation is React state in `App.tsx`, no router installed yet — logo/wordmark click resets to search, nav links switch pages. No real URLs change per page yet; `react-router-dom` is a quick follow-up if shareable links are needed later.
+Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
 
 **Backend integration status:** `POST /api/claims` accepts `{ "claim": "..." }`,
 normalizes the claim through Foundry, and retrieves up to 20 PubMed articles.
 It returns `claim`, `normalized`, `evidence` (query, total count, articles), and
 `assessment_status: "pending"`, plus `assessments` keyed by PMID. The frontend
 displays study records, abstracts, metadata-based categories, flags, and
-provisional design weights. Relevance and findings remain unassessed. No verdict or confidence is generated yet. Empty searches return 200
+provisional design weights. Relevance and findings can be assessed on demand for each abstract. No verdict or confidence is generated yet. Empty searches return 200
 with an empty article list; invalid claims return 422, and provider failures
 return 502/503. Foundry credentials stay in the backend environment.
 
@@ -98,23 +100,35 @@ Frontend layout:
 
 ```
 frontend/src/
-  assets/              logo files
+  assets/
+    team/                team photos for the About page
   components/
-    NavBar.tsx          nav bar, logo/wordmark, page nav
-    SearchScreen.tsx     home/search hero + examples + status states
-    ResultScreen.tsx     study records + abstracts + source links
-    FeatureCards.tsx     claim normalization / evidence grading / retraction checks cards
-    HowItWorksPage.tsx
-    AboutPage.tsx
+    NavBar.tsx            logo, page links, theme toggle
+    SearchScreen.tsx      search + result page (dark top, light bottom)
+    ResultScreen.tsx      live studies, abstracts and on-demand assessments
+    result/              reserved verdict presentation components (not connected)
+      VerdictResult.tsx   verdict capsule, explanation, related claims
+      ScoreTip.tsx        the "?" tooltip next to the confidence score
+      ReferralTabs.tsx    further reading: tabbed referral sheets
+    HowItWorksPage.tsx    capsule tube + stations
+    how/
+      Clipboard.tsx       lab-report clipboard with an ink stamp
+      NormalizeDemo.tsx   interactive demo: claim normalization
+      GradingDemo.tsx     interactive demo: evidence grading
+      RetractionDemo.tsx  interactive demo: retraction checks
+    AboutPage.tsx         project, team and advisor
+  data/
+    team.ts               names, roles and blurbs for the About page
   hooks/
-    useClaimChecker.ts   shared state + fetch logic for checking a claim
+    useClaimChecker.ts    shared state + fetch logic for checking a claim
+    useTheme.ts           light/dark mode, remembered per browser
   styles/
     theme.css            design tokens, gradient, glass utility classes
   types.ts               shared TypeScript types
   App.tsx                page routing (state-based) + top-level layout
 ```
 
-**Known gaps:** evidence assessment and verdict generation, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
+**Known gaps:** overall evidence synthesis and verdict generation, accessibility pass (#28), usability testing (#27).
 
 ## Documentation
 

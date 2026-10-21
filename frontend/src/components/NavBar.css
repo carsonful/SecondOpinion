@@ -4,7 +4,7 @@
   justify-content: space-between;
   padding: 16px 32px;
   background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid var(--divider);
 }
 
 .navbar__brand {
@@ -23,17 +23,23 @@
   display: block;
 }
 
+.page[data-theme='light'] .navbar__logo {
+  filter: drop-shadow(0 1px 2px rgba(11, 25, 87, 0.25));
+}
+
 .navbar__wordmark {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  color: #fff;
+  color: var(--text-strong);
 }
 
 .navbar__script {
-  font-family: 'Arizonia', cursive;
-  font-size: 24px;
-  line-height: 1;
+  font-family: var(--font-hand);
+  font-size: 17px;
+  line-height: 1.6;
+  display: inline-block;
+  transform: rotate(-4deg) translateY(-2px);
 }
 
 .navbar__caps {
@@ -45,19 +51,135 @@
 
 .navbar__links {
   display: flex;
+  align-items: center;
   gap: 24px;
 }
 
-.navbar__links button {
+.navbar__links button:not(.navbar__theme) {
   background: none;
   border: none;
   padding: 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
   font-size: 14px;
   font-family: inherit;
   transition: color 0.15s ease;
 }
 
-.navbar__links button:hover {
-  color: #fff;
+.navbar__links button:not(.navbar__theme):hover,
+.navbar__links button[aria-current='page'] {
+  color: var(--text-strong);
+}
+
+.navbar__links button[aria-current='page'] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 2px;
+}
+
+/* Theme toggle: a two-tone capsule. Everything here is CSS only (the tinted
+   half is a ::before, the icon is laid out with flexbox), so it looks right
+   whatever version of NavBar.tsx is on the page. */
+.navbar__theme {
+  position: relative;
+  width: 60px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end; /* light mode: moon on the right */
+  color: var(--text-strong);
+}
+
+.page[data-theme='dark'] .navbar__theme {
+  justify-content: flex-start; /* dark mode: sun on the left */
+}
+
+.navbar__theme::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  background: var(--tint-blue);
+}
+
+.page[data-theme='dark'] .navbar__theme::before {
+  left: 0;
+  right: auto;
+  background: rgba(246, 228, 200, 0.22);
+}
+
+/* the old extra half span is no longer needed */
+.navbar__theme-half {
+  display: none;
+}
+
+.navbar__theme:hover {
+  background: var(--pill-bg-hover);
+}
+
+.navbar__theme-icon {
+  position: relative;
+  display: inline-flex;
+  animation: theme-spin 0.4s ease;
+}
+
+.navbar__theme svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes theme-spin {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .navbar {
+    padding: 14px 16px;
+  }
+  .navbar__links {
+    gap: 12px;
+  }
+  .navbar__links button:not(.navbar__theme) {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .navbar__brand {
+    gap: 6px;
+  }
+  .navbar__logo {
+    height: 28px;
+  }
+  .navbar__theme {
+    width: 52px;
+    height: 28px;
+    padding: 0 6px;
+  }
+  .navbar__script {
+    font-size: 15px;
+  }
+  .navbar__caps {
+    font-size: 13px;
+  }
+}
+
+.navbar {
+  gap: 12px;
+}
+
+@media (max-width: 400px) {
+  .navbar__logo {
+    display: none;
+  }
 }

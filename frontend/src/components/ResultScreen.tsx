@@ -1,12 +1,9 @@
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ClaimResult, StudyAssessment } from '../types'
 import './ResultScreen.css'
 
 interface ResultScreenProps {
   result: ClaimResult
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onSearch: (text: string) => void
 }
 
 function Assessment({ initial, claim }: { initial: StudyAssessment; claim: string }) {
@@ -78,22 +75,11 @@ function Assessment({ initial, claim }: { initial: StudyAssessment; claim: strin
   )
 }
 
-export default function ResultScreen({ result, searchValue, onSearchChange, onSearch }: ResultScreenProps) {
+export default function ResultScreen({ result }: ResultScreenProps) {
   const assessments = new Map(result.assessments.map(item => [item.pmid, item]))
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    onSearch(searchValue)
-  }
 
   return (
     <section className="result">
-      <form className="result__search" onSubmit={handleSubmit}>
-        <input className="result__search-input" type="text" aria-label="Health claim"
-          maxLength={2000} required value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)} placeholder="Enter another health claim" />
-        <button className="result__search-button" type="submit">Find studies</button>
-      </form>
       <h1 className="result__claim">“{result.claim}”</h1>
       <div className="result__summary glass-panel" role="status">
         <h2>Explore study findings</h2>
