@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     ncbi_email: str | None = None
     ncbi_tool: str = "SecondOpinion"
 
+    openalex_api_key: SecretStr | None = None
+    unpaywall_email: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

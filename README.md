@@ -84,11 +84,15 @@ Runs on http://localhost:5173 and proxies `/api` requests to the backend.
 Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
 
 **Backend integration status:** `POST /api/claims` accepts `{ "claim": "..." }`,
-normalizes the claim through Foundry, and retrieves up to 20 PubMed articles.
+normalizes the claim through Foundry, and retrieves up to 5 PubMed articles in PubMed relevance order, including when
+using the broader intervention-only fallback. This is a small prototype review
+set, not a comprehensive evidence search. Metadata grading uses the unchanged,
+provisional `base_weights_v0.1` rules. Study assessments remain on demand;
+retrieval does not automatically send all five papers to Foundry.
 It returns `claim`, `normalized`, `evidence` (query, total count, articles), and
 `assessment_status: "pending"`, plus `assessments` keyed by PMID. The frontend
 displays study records, abstracts, metadata-based categories, flags, and
-provisional design weights. Relevance and findings can be assessed on demand for each abstract. No verdict or confidence is generated yet. Empty searches return 200
+provisional design weights. Relevance and findings can be assessed on demand from available article full text or an uploaded PDF. No verdict or confidence is generated yet. Empty searches return 200
 with an empty article list; invalid claims return 422, and provider failures
 return 502/503. Foundry credentials stay in the backend environment.
 
@@ -223,9 +227,71 @@ These rules use the retrieved PubMed fields only. Linked corrections/concerns ar
 resolved. Crossref checks and abstract-based design resolution are not implemented yet.
 Foundry finding extraction is available on demand as described below. No notice flag should be read as an integrity clearance.
 
-### Abstract findings
+### Abstract assessment and optional full-text review
 
-Each study has an **Assess abstract** button. It calls
+The primary **Assess abstract** action calls `/api/claims/articles/{pmid}/assess`.
+It checks the abstract for study population/design, intervention, comparator,
+outcomes and reported results, summarizing only available information. The UI
+labels this as abstract-only, displays verified supporting passages and reported
+measurements, and identifies missing information. Assessment remains on demand
+to control spending; searching does not automatically assess all five papers.
+
+**Optional full-text review** contains the **Find full text and assess** action
+and PDF upload. A failed full-text attempt preserves any completed abstract
+assessment. Full-text review makes a separate model request when retrieval succeeds.
+
+The **Find full text and assess** button calls
+`POST /api/claims/articles/{pmid}/assess-full-text` with `{ "claim": "..." }`.
+The backend first tries the linked PMC article through EFetch. If that fails,
+it looks up the DOI in OpenAlex and, when a contact email is configured,
+Unpaywall. It tries up to four discovered open-access PDF/HTML locations,
+including PDF links exposed by publisher citation metadata. A missing copy or
+publisher download failure is reported as unavailable, never as an abstract
+assessment. The publisher link on each study lets you obtain a PDF manually.
+
+You can also select a PDF and click **Upload PDF and assess**. The multipart
+`POST /api/claims/articles/{pmid}/assess-pdf` endpoint accepts `claim` and `file`.
+The file is not retained by the app after processing. Extracted text is sent to
+Foundry only after title and article-body checks pass. Text-based PDFs must be
+at most 10 MB and 100 pages. Scans, encrypted documents, unrecognized titles,
+and documents without identifiable body sections are rejected before a model
+call. PDF parsing runs in an isolated process with a timeout and Unix resource
+limits. Table layout can be imperfect; OCR is not implemented.
+
+All sources remain limited to 60,000 extracted characters per paper, with no
+silent truncation. HTML extraction requires an explicit article-body container;
+unsupported publisher layouts may require a PDF upload. Images and external
+supplements are not assessed. Quotes and measurements are validated against
+the extracted text actually sent to the model. The response records
+`assessment_basis`, `source_kind`, `source_url` (null for uploads), and
+`coverage_note`. Source kinds are `pmc`, `publisher_html` (including repository
+HTML), `downloaded_pdf`, and `uploaded_pdf`.
+
+Optional discovery settings in `backend/.env`:
+
+```dotenv
+# Optional OpenAlex key; basic keyless lookups are attempted by default.
+OPENALEX_API_KEY=
+# Your real contact email. If unset, NCBI_EMAIL is used when available.
+UNPAYWALL_EMAIL=
+```
+
+Restart the backend after changing these settings. No keys or contact email are
+sent to publishers. Downloads require public HTTPS destinations, with validated
+DNS addresses pinned for each connection and redirects checked individually.
+Publisher login pages, inaccessible copies and blocked downloads are not bypassed.
+Discovery is capped at 90 seconds; each document download at 30 seconds.
+
+The five-study search limit and provisional `base_weights_v0.1` rules are
+unchanged. Full-text interpretation does not create an overall verdict or
+activate synthesis weights. Retractions and integrity notices skip assessment;
+unresolved corrections and concerns remain flagged. Each successful retrieval
+or upload leads to one on-demand model request. Requests are not cached across
+searches or browsers, so repeated assessments can incur additional costs.
+
+### Abstract findings endpoint
+
+The default abstract-only endpoint accepts
 `POST /api/claims/articles/{pmid}/assess` with `{ "claim": "..." }`. The backend
 retrieves the article by PMID and asks Foundry for relevance, a finding, a short
 summary, and supporting abstract passages. Exact passages are validated against

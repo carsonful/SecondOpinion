@@ -234,3 +234,26 @@ def test_measurement_failure_returns_success_with_warning(api, monkeypatch):
     assert response.status_code == 200
     assert response.json()["effect_estimates"] == []
     assert response.json()["measurement_warnings"]
+
+
+@pytest.mark.parametrize('passages,diagnostic', [
+    ([], 'reason=passage_count count=0'),
+    ([' '], 'passage=1 reason=empty'),
+    (['Private invented quote'], 'passage=1 reason=not_in_source'),
+])
+def test_full_text_quote_diagnostics(caplog, passages, diagnostic):
+    from app.services.findings import AssessmentOutputError
+    with pytest.raises(AssessmentOutputError):
+        assess_abstract('private claim', article(pmc_id='PMC123'), full_text='Full study text.',
+                        settings=settings(), transport=transport(OUTPUT | {'supporting_passages': passages}))
+    assert 'basis=full_text' in caplog.text
+    assert diagnostic in caplog.text
+    assert 'Private invented quote' not in caplog.text
+    assert 'Full study text.' not in caplog.text
+    assert 'private claim' not in caplog.text
+
+
+def test_measurement_warning_does_not_replace_assessment_source_label():
+    result = assess_abstract('claim', article(), settings=settings(), transport=transport(
+        OUTPUT | {'sample_sizes': [{'reported': 'invalid', 'passage': 'invalid'}]}))
+    assert result.eligibility_reason.startswith('Abstract assessed;')

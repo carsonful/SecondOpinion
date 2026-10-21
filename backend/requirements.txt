@@ -3,3 +3,6 @@ uvicorn[standard]==0.54.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 httpx2==2.13.1
+pypdf==6.21.1
+beautifulsoup4==4.15.0
+python-multipart==0.0.32

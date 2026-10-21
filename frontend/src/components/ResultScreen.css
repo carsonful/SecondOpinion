@@ -262,3 +262,7 @@
 }
 
 .result__assessment { border-top: 1px solid var(--border); padding: 12px 0; margin: 12px 0; font-size: 14px; }
+
+.result__upload { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.result__upload label { display: grid; gap: 10px; }
+.result__upload input { max-width: 100%; }

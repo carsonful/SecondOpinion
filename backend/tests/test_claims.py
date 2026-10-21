@@ -42,7 +42,7 @@ def test_claim_retrieves_real_fixture_records(setup):
     assert response.status_code == 200
     body = response.json()
     assert seen == ["zinc cures colds"]
-    client.search.assert_awaited_once_with("(zinc) AND (common cold)", 20)
+    client.search.assert_awaited_once_with("(zinc) AND (common cold)", 5)
     assert body["claim"] == "zinc cures colds"
     assert body["assessment_status"] == "pending"
     assert body["evidence"]["articles"][0]["pmid"] == "38719213"
@@ -123,7 +123,7 @@ def test_empty_search_broadens_intervention_and_preserves_claim(setup):
     assert body["normalized"]["query"] == "(zinc) AND (common cold)"
     assert body["evidence"]["query"] == "(zinc)"
     assert body["claim"] == "zinc cures colds"
-    assert client.search.await_args_list[1].args == ("(zinc)", 20)
+    assert client.search.await_args_list[1].args == ("(zinc)", 5)
 
 
 def test_broader_search_outage_is_not_an_empty_success(setup):

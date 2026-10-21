@@ -34,6 +34,10 @@ export interface StudyAssessment {
   effective_weight: number
   flags: string[]
   assessment_status: 'pending' | 'completed' | 'unavailable' | 'skipped'
+  assessment_basis: 'abstract' | 'full_text' | null
+  source_url: string | null
+  source_kind: 'pmc' | 'publisher_html' | 'downloaded_pdf' | 'uploaded_pdf' | null
+  coverage_note: string | null
   summary: string | null
   measurement_warnings: string[]
   sample_sizes: ReportedMeasure[]

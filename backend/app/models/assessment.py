@@ -22,6 +22,10 @@ class StudyAssessment(BaseModel):
     effective_weight: int = 0
     flags: list[str]
     assessment_status: Literal["pending", "completed", "unavailable", "skipped"] = "pending"
+    assessment_basis: Literal["abstract", "full_text"] | None = None
+    source_url: str | None = None
+    source_kind: Literal["pmc", "publisher_html", "downloaded_pdf", "uploaded_pdf"] | None = None
+    coverage_note: str | None = None
     summary: str | None = None
     measurement_warnings: list[str] = Field(default_factory=list)
     sample_sizes: list[ReportedMeasure] = Field(default_factory=list)

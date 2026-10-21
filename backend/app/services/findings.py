@@ -1,4 +1,4 @@
-"""Claim-specific abstract interpretation; never produces an overall verdict."""
+"""Claim-specific study interpretation; never produces an overall verdict."""
 
 import json
 import logging
@@ -39,7 +39,12 @@ For a question, assess the proposition being asked about. Non-significant result
 are not proof of no effect. Use mixed for differing outcomes, inconclusive for
 imprecise results, cannot_determine for missing findings or uncertain relevance.
 If relevance is not relevant or uncertain, finding must be cannot_determine.
-Write a short plain-language summary explaining the finding and limitations.
+Write a short plain-language summary of the study and its reported results.
+Describe the population, study design, intervention/exposure, comparator and
+outcome when stated, then explain the main result and limitations. Distinguish
+what the authors report from your interpretation of relevance to the claim.
+Explicitly identify important details that are not reported in the abstract;
+never fill them in from the title or general knowledge.
 Provide 1-3 exact, contiguous passages copied from the abstract supporting your
 interpretation, including population or outcome details when relevant. Do not
 invent quotations, use ellipses, give a confidence score, assign design weights,
@@ -64,10 +69,15 @@ These are reported measurements, not quality scores.
 def assess_abstract(
     claim: str, article: PubMedArticle, *, settings: Settings | None = None,
     transport: httpx.BaseTransport | None = None,
+    full_text: str | None = None,
 ) -> StudyAssessment:
     result = assess_metadata(article)
-    if not article.abstract or not article.abstract.strip():
-        return result.model_copy(update={"assessment_status": "unavailable"})
+    source_text = full_text if full_text is not None else article.abstract
+    basis = "full_text" if full_text is not None else "abstract"
+    label = "Full study text" if full_text is not None else "Abstract"
+    if not source_text or not source_text.strip():
+        return result.model_copy(update={"assessment_status": "unavailable",
+                                         "coverage_note": "No source text is available for this assessment. No model call was made."})
     if result.eligibility == "excluded" or any("Integrity notice" in flag for flag in result.flags):
         return result.model_copy(update={"assessment_status": "skipped"})
     settings = settings or get_settings()
@@ -88,9 +98,9 @@ def assess_abstract(
             }, json={
                 "model": settings.azure_foundry_deployment,
                 "messages": [
-                    {"role": "system", "content": PROMPT},
+                    {"role": "system", "content": PROMPT if full_text is None else PROMPT.replace("abstract", "article text") + "\nRead the methods, results and limitations. Distinguish this study’s own findings from cited background studies. Tables are rendered as text; do not infer values from missing images or supplementary files."},
                     {"role": "user", "content": json.dumps({
-                        "claim": claim, "title": article.title, "abstract": article.abstract,
+                        "claim": claim, "title": article.title, basis: source_text,
                     })},
                 ],
                 "response_format": {"type": "json_schema", "json_schema": {
@@ -112,11 +122,20 @@ def assess_abstract(
             raise ValueError("Inconsistent relevance and finding")
         # Normalize whitespace only; never fuzzy-match invented quotations.
         stage = "supporting_passages"
-        source = " ".join(article.abstract.split())
-        if not 1 <= len(finding.supporting_passages) <= 3 or any(
-            not quote.strip() or " ".join(quote.split()) not in source
-            for quote in finding.supporting_passages
-        ):
+        source = " ".join(source_text.split())
+        passages = finding.supporting_passages
+        if not 1 <= len(passages) <= 3:
+            logger.warning("Study quote validation failed: pmid=%s basis=%s reason=passage_count count=%s",
+                           article.pmid, basis, len(passages))
+            raise ValueError("Invalid source passage count")
+        invalid = [(index, "empty" if not quote.strip() else "not_in_source")
+                   for index, quote in enumerate(passages, start=1)
+                   if not quote.strip() or " ".join(quote.split()) not in source]
+        if invalid:
+            # Record the failure shape, never claims, source text or model output.
+            for index, reason in invalid:
+                logger.warning("Study quote validation failed: pmid=%s basis=%s passage=%s reason=%s source_characters=%s",
+                               article.pmid, basis, index, reason, len(source_text))
             raise ValueError("Unsupported source passage")
         measurement_warnings = []
         for field in ("sample_sizes", "effect_estimates"):
@@ -130,30 +149,32 @@ def assess_abstract(
             omitted = len(measures) - min(len(valid), 10)
             setattr(finding, field, valid[:10])
             if omitted:
-                label = "sample-size entries" if field == "sample_sizes" else "effect estimates"
+                measure_label = "sample-size entries" if field == "sample_sizes" else "effect estimates"
                 measurement_warnings.append(
-                    f"Some {label} were omitted because they could not be verified or exceeded the display limit."
+                    f"Some {measure_label} were omitted because they could not be verified or exceeded the display limit."
                 )
-                logger.warning("Abstract measurements omitted: pmid=%s field=%s count=%s",
-                               article.pmid, field, omitted)
+                logger.warning("Study measurements omitted: pmid=%s basis=%s field=%s count=%s",
+                               article.pmid, basis, field, omitted)
     except httpx.HTTPError as exc:
         status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
-        logger.warning("Abstract assessment failed: pmid=%s stage=%s error=%s http_status=%s",
-                       article.pmid, stage, type(exc).__name__, status)
-        raise FoundryUnavailableError("Abstract assessment provider request failed") from None
+        logger.warning("Study assessment failed: pmid=%s basis=%s stage=%s error=%s http_status=%s",
+                       article.pmid, basis, stage, type(exc).__name__, status)
+        raise FoundryUnavailableError("Study assessment provider request failed") from None
     except (ValueError, KeyError, IndexError, TypeError):
-        logger.warning("Abstract assessment rejected: pmid=%s stage=%s", article.pmid, stage)
-        raise AssessmentOutputError("Abstract assessment output could not be verified") from None
+        logger.warning("Study assessment rejected: pmid=%s basis=%s stage=%s", article.pmid, basis, stage)
+        raise AssessmentOutputError("Study assessment output could not be verified") from None
 
     updates = {**finding.model_dump(), "assessment_status": "completed",
-               "measurement_warnings": measurement_warnings}
+               "measurement_warnings": measurement_warnings, "assessment_basis": basis,
+               "source_url": f"https://pmc.ncbi.nlm.nih.gov/articles/{article.pmc_id}/" if full_text is not None else article.url,
+               "coverage_note": "PMC article body and abstract, including text tables and captions. Figure images, external supplements and reference lists are not assessed." if full_text is not None else "PubMed abstract only."}
     if finding.relevance == "not_relevant":
-        updates.update(eligibility="excluded", eligibility_reason="Abstract does not address this claim.")
+        updates.update(eligibility="excluded", eligibility_reason=f"{label} does not address this claim.")
     elif any(link.relation in {"ErratumIn", "ExpressionOfConcernIn"} for link in article.integrity_links):
         pass  # Preserve unresolved integrity reasons after abstract interpretation.
     elif result.eligibility != "separate":
         updates["eligibility_reason"] = (
-            "Abstract assessed; design resolution, applicability and synthesis eligibility still need review."
+            f"{label} assessed; design resolution, applicability and synthesis eligibility still need review."
         )
     # Keep effective weights at zero: abstract extraction alone does not establish
     # comparability, overlap, integrity clearance, or applicability of these defaults.
