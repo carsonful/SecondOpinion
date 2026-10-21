@@ -8,12 +8,15 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from bs4 import BeautifulSoup
-
 from app.models.pubmed import PubMedArticle
-from app.services.full_text import FullTextUnavailable, MAX_STUDY_CHARACTERS
 
 MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+# One bounded model request for an uploaded PDF; never truncate a paper and call it a full review.
+MAX_STUDY_CHARACTERS = 60_000
+
+
+class FullTextUnavailable(Exception):
+    pass
 
 
 @dataclass(frozen=True)
@@ -67,28 +70,3 @@ def extract_pdf(content: bytes, article: PubMedArticle, source_url: str | None =
     text = check_body(payload['text'])
     return StudyDocument(text, source_url, 'downloaded_pdf' if source_url else 'uploaded_pdf',
         'PDF text extraction; page markers are included. Images, scanned pages and external supplements are not read. Table layout may be imperfect; quotations are checked against extracted text.')
-
-
-def extract_html(content: bytes, article: PubMedArticle, source_url: str) -> StudyDocument:
-    soup = BeautifulSoup(content, 'html.parser')
-    title = soup.find('meta', attrs={'name': 'citation_title'})
-    heading = soup.find('h1')
-    verify_title(str(title.get('content', '')) if title else heading.get_text(' ', strip=True) if heading else '', article)
-    doi = soup.find('meta', attrs={'name': 'citation_doi'})
-    if doi and article.doi and str(doi.get('content', '')).removeprefix('https://doi.org/').casefold() != article.doi.casefold():
-        raise FullTextUnavailable('Publisher DOI does not match the selected study.')
-    # Explicit full-body containers only; never consume a generic landing page.
-    body = soup.select_one('.article-body, .article__body, .article-section__content, #body, #article-body, [itemprop="articleBody"]')
-    if body is None:
-        raise FullTextUnavailable('Publisher page did not expose a supported full-text body. Try uploading its PDF.')
-    for node in body.select('script, style, nav, form, aside, .ref-list, .references, #references'):
-        node.decompose()
-    text = check_body(body.get_text('\n', strip=True))
-    return StudyDocument(text, source_url, 'publisher_html',
-        'Publisher/repository article HTML text. Images and external supplements are not read. Only the exposed article body is assessed.')
-
-
-def pdf_links(content: bytes, base_url: str) -> list[str]:
-    from urllib.parse import urljoin
-    soup = BeautifulSoup(content, 'html.parser')
-    return [urljoin(base_url, str(meta['content'])) for meta in soup.select('meta[name="citation_pdf_url"][content]')][:2]

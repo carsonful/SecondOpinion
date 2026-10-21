@@ -92,7 +92,7 @@ retrieval does not automatically send all five papers to Foundry.
 It returns `claim`, `normalized`, `evidence` (query, total count, articles), and
 `assessment_status: "pending"`, plus `assessments` keyed by PMID. The frontend
 displays study records, abstracts, metadata-based categories, flags, and
-provisional design weights. Relevance and findings can be assessed on demand from available article full text or an uploaded PDF. No verdict or confidence is generated yet. Empty searches return 200
+provisional design weights. Relevance and findings can be assessed on demand from open-access full text when available, the abstract otherwise, or an uploaded PDF. No verdict or confidence is generated yet. Empty searches return 200
 with an empty article list; invalid claims return 422, and provider failures
 return 502/503. Foundry credentials stay in the backend environment.
 
@@ -227,75 +227,89 @@ These rules use the retrieved PubMed fields only. Linked corrections/concerns ar
 resolved. Crossref checks and abstract-based design resolution are not implemented yet.
 Foundry finding extraction is available on demand as described below. No notice flag should be read as an integrity clearance.
 
-### Abstract assessment and optional full-text review
+### Full-text retrieval and study assessment
 
-The primary **Assess abstract** action calls `/api/claims/articles/{pmid}/assess`.
-It checks the abstract for study population/design, intervention, comparator,
-outcomes and reported results, summarizing only available information. The UI
-labels this as abstract-only, displays verified supporting passages and reported
-measurements, and identifies missing information. Assessment remains on demand
-to control spending; searching does not automatically assess all five papers.
+PubMed searches only return studies that have an abstract (`hasabstract[filter]`),
+so every study can at least be summarized from its abstract.
 
-**Optional full-text review** contains the **Find full text and assess** action
-and PDF upload. A failed full-text attempt preserves any completed abstract
-assessment. Full-text review makes a separate model request when retrieval succeeds.
+When a claim is submitted, `POST /api/claims` also resolves each ranked study to a
+full-text record (`backend/app/services/full_text.py`), trying in order:
 
-The **Find full text and assess** button calls
-`POST /api/claims/articles/{pmid}/assess-full-text` with `{ "claim": "..." }`.
-The backend first tries the linked PMC article through EFetch. If that fails,
-it looks up the DOI in OpenAlex and, when a contact email is configured,
-Unpaywall. It tries up to four discovered open-access PDF/HTML locations,
-including PDF links exposed by publisher citation metadata. A missing copy or
-publisher download failure is reported as unavailable, never as an abstract
-assessment. The publisher link on each study lets you obtain a PDF manually.
+1. **PMC full text.** PMIDs are mapped to PMCIDs and DOIs in one batched call to the
+   NCBI ID Converter. With a PMCID, the JATS XML comes from Europe PMC
+   (`/{PMCID}/fullTextXML`), falling back to NCBI's BioC JSON. Tier `pmc_fulltext`.
+2. **Open-access PDF.** With a DOI, Unpaywall's `best_oa_location.url_for_pdf` is
+   downloaded and parsed with Azure AI Document Intelligence (prebuilt layout).
+   Parsing sits behind the `PdfParser` interface so GROBID can replace it. Tier `oa_pdf`.
+3. **Abstract.** Otherwise the PubMed abstract. Tier `abstract_only`.
+
+The PMC OA web service, PMC FTP packages and publisher web pages are never used.
+Every tier produces the same record: `pmid`, `pmcid`, `doi`, `title`, `year`,
+`journal`, `publication_types`, `source_tier`, `license` and `sections`, where each
+section is labeled `abstract`, `introduction`, `methods`, `results`, `discussion`,
+`limitations` or `other`. One failed study never fails the batch; the log line
+`full_text_tier pmid=... tier=...` records where each study landed. NCBI requests
+share PubMed's rate limiter, and 429/5xx responses are retried with backoff.
+
+Records are cached as JSON in `backend/.cache/full_text/` (behind the `RecordCache`
+interface). Full-text records are kept; abstract-only results expire after 7 days
+so newly open-access papers get picked up. Outages are not cached.
+
+The claim response includes `full_text_coverage`, for example
+"3 of 5 studies were read in full text (2 PMC, 1 open-access PDF); 2 were abstract only."
+
+**Assess study** (`POST /api/claims/articles/{pmid}/assess` with
+`{ "claim": "...", "study_pmids": [...] }`) sends Foundry the study's Abstract,
+Methods, Results and Limitations sections plus `publication_types` and
+`source_tier`, or just the abstract when no full text was found. Each study is kept
+within `STUDY_TOKEN_BUDGET` tokens (about 4 characters a token), cutting
+Limitations first, then Methods, then Results. `study_pmids` lets the prompt state
+how many of the claim's studies were full text versus abstract only. Quotes and
+measurements are validated against the exact text sent. The response records
+`assessment_basis`, `source_tier`, `source_kind`, `license`, `source_url` and
+`coverage_note`.
+
+`POST /api/claims/articles/{pmid}/assess-full-text` does the same but returns
+`unavailable` instead of falling back to the abstract.
 
 You can also select a PDF and click **Upload PDF and assess**. The multipart
 `POST /api/claims/articles/{pmid}/assess-pdf` endpoint accepts `claim` and `file`.
 The file is not retained by the app after processing. Extracted text is sent to
 Foundry only after title and article-body checks pass. Text-based PDFs must be
-at most 10 MB and 100 pages. Scans, encrypted documents, unrecognized titles,
-and documents without identifiable body sections are rejected before a model
-call. PDF parsing runs in an isolated process with a timeout and Unix resource
-limits. Table layout can be imperfect; OCR is not implemented.
+at most 10 MB and 100 pages, and at most 60,000 extracted characters. PDF parsing
+runs in an isolated process with a timeout and Unix resource limits.
 
-All sources remain limited to 60,000 extracted characters per paper, with no
-silent truncation. HTML extraction requires an explicit article-body container;
-unsupported publisher layouts may require a PDF upload. Images and external
-supplements are not assessed. Quotes and measurements are validated against
-the extracted text actually sent to the model. The response records
-`assessment_basis`, `source_kind`, `source_url` (null for uploads), and
-`coverage_note`. Source kinds are `pmc`, `publisher_html` (including repository
-HTML), `downloaded_pdf`, and `uploaded_pdf`.
-
-Optional discovery settings in `backend/.env`:
+Settings in `backend/.env`:
 
 ```dotenv
-# Optional OpenAlex key; basic keyless lookups are attempted by default.
-OPENALEX_API_KEY=
-# Your real contact email. If unset, NCBI_EMAIL is used when available.
+# Your real contact email for Unpaywall. If unset, NCBI_EMAIL is used.
 UNPAYWALL_EMAIL=
+# Azure AI Document Intelligence; without both, PDF-only studies use their abstract.
+AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=
+AZURE_DOCUMENT_INTELLIGENCE_API_KEY=
+# Optional tuning
+# FULL_TEXT_CACHE_DIR=.cache/full_text
+# FULL_TEXT_CONCURRENCY=4
+# FULL_TEXT_STUDY_TIMEOUT=45
+# STUDY_TOKEN_BUDGET=6000
 ```
 
-Restart the backend after changing these settings. No keys or contact email are
-sent to publishers. Downloads require public HTTPS destinations, with validated
-DNS addresses pinned for each connection and redirects checked individually.
-Publisher login pages, inaccessible copies and blocked downloads are not bypassed.
-Discovery is capped at 90 seconds; each document download at 30 seconds.
+Restart the backend after changing these settings. Downloads require public HTTPS
+destinations, with validated DNS addresses pinned for each connection.
 
 The five-study search limit and provisional `base_weights_v0.1` rules are
 unchanged. Full-text interpretation does not create an overall verdict or
-activate synthesis weights. Retractions and integrity notices skip assessment;
-unresolved corrections and concerns remain flagged. Each successful retrieval
-or upload leads to one on-demand model request. Requests are not cached across
-searches or browsers, so repeated assessments can incur additional costs.
+activate synthesis weights. Retractions and integrity notices skip assessment.
 
-### Abstract findings endpoint
+To run the live integration test against a known open-access PMC article:
+`RUN_INTEGRATION_TESTS=1 pytest -m integration` (from `backend/`).
 
-The default abstract-only endpoint accepts
-`POST /api/claims/articles/{pmid}/assess` with `{ "claim": "..." }`. The backend
-retrieves the article by PMID and asks Foundry for relevance, a finding, a short
-summary, and supporting abstract passages. Exact passages are validated against
-the abstract with whitespace normalization; invalid output returns 503 and can
+### Study findings endpoint
+
+`POST /api/claims/articles/{pmid}/assess` retrieves the article by PMID and its
+full-text record (see above), and asks Foundry for relevance, a finding, a short
+summary, and supporting passages. Exact passages are validated against the text
+sent with whitespace normalization; invalid output returns 503 and can
 be retried. This checks quotation provenance, not whether the model's reasoning
 is correct. Assessments are held in browser memory for the current results only.
 

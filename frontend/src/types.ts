@@ -36,7 +36,9 @@ export interface StudyAssessment {
   assessment_status: 'pending' | 'completed' | 'unavailable' | 'skipped'
   assessment_basis: 'abstract' | 'full_text' | null
   source_url: string | null
-  source_kind: 'pmc' | 'publisher_html' | 'downloaded_pdf' | 'uploaded_pdf' | null
+  source_kind: 'pmc' | 'downloaded_pdf' | 'uploaded_pdf' | null
+  source_tier: 'pmc_fulltext' | 'oa_pdf' | 'abstract_only' | null
+  license: string | null
   coverage_note: string | null
   summary: string | null
   measurement_warnings: string[]
@@ -83,4 +85,5 @@ export interface ClaimResult {
   search_scope: 'claim' | 'intervention_only'
   assessments: StudyAssessment[]
   assessment_status: 'pending'
+  full_text_coverage: string | null
 }

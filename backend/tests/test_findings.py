@@ -83,8 +83,8 @@ def api(monkeypatch):
     client = AsyncMock()
     client.get_article.return_value = article()
     app.dependency_overrides[get_pubmed_client] = lambda: client
-    monkeypatch.setattr(claims, "assess_abstract", lambda claim, paper: assess_abstract(
-        claim, paper, settings=settings(), transport=transport()))
+    monkeypatch.setattr(claims, "assess_abstract", lambda claim, paper, **kwargs: assess_abstract(
+        claim, paper, settings=settings(), transport=transport(), **kwargs))
     try:
         yield TestClient(app), client
     finally:
@@ -114,7 +114,7 @@ def test_route_validation(api, pmid, claim):
 
 def test_route_failure_preserves_private_details(api, monkeypatch):
     client, _ = api
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise FoundryUnavailableError("private provider response")
     monkeypatch.setattr(claims, "assess_abstract", fail)
     response = client.post("/api/claims/articles/123/assess", json={"claim": "test"})
@@ -180,7 +180,7 @@ def test_absent_measurements_stay_empty():
 def test_invalid_output_route_is_502(api, monkeypatch):
     from app.services.findings import AssessmentOutputError
     client, _ = api
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise AssessmentOutputError("private output")
     monkeypatch.setattr(claims, "assess_abstract", fail)
     response = client.post("/api/claims/articles/123/assess", json={"claim": "test"})
@@ -227,9 +227,9 @@ def test_measurement_display_limit_does_not_fail_assessment():
 
 def test_measurement_failure_returns_success_with_warning(api, monkeypatch):
     client, _ = api
-    monkeypatch.setattr(claims, "assess_abstract", lambda claim, paper: assess_abstract(
+    monkeypatch.setattr(claims, "assess_abstract", lambda claim, paper, **kwargs: assess_abstract(
         claim, paper, settings=settings(), transport=transport(OUTPUT | dict(
-            effect_estimates=[dict(reported="invented effect", passage="Example abstract.")]))))
+            effect_estimates=[dict(reported="invented effect", passage="Example abstract.")])), **kwargs))
     response = client.post("/api/claims/articles/123/assess", json={"claim": "test"})
     assert response.status_code == 200
     assert response.json()["effect_estimates"] == []

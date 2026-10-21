@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:ali="http://www.niso.org/schemas/ali/1.0/" article-type="research-article">
+  <front>
+    <journal-meta><journal-title-group><journal-title>Journal of Example Nutrition</journal-title></journal-title-group></journal-meta>
+    <article-meta>
+      <article-id pub-id-type="pmid">99000001</article-id>
+      <article-id pub-id-type="pmcid">PMC9900001</article-id>
+      <article-id pub-id-type="doi">10.5555/so.0001</article-id>
+      <title-group><article-title>Raw versus pasteurized milk and gastrointestinal symptoms: a randomized crossover trial</article-title></title-group>
+      <permissions>
+        <copyright-statement>© The Authors 2024</copyright-statement>
+        <license xlink:href="https://creativecommons.org/licenses/by/4.0/">
+          <ali:license_ref>https://creativecommons.org/licenses/by/4.0/</ali:license_ref>
+          <license-p>This article is distributed under the terms of the Creative Commons Attribution 4.0 International License.</license-p>
+        </license>
+      </permissions>
+      <abstract>
+        <title>Abstract</title>
+        <sec><title>Background</title><p>Raw milk is claimed to be better tolerated than pasteurized milk.</p></sec>
+        <sec><title>Methods</title><p>We randomized 120 adults with self-reported lactose intolerance to raw or pasteurized milk.</p></sec>
+        <sec><title>Results</title><p>Symptom scores did not differ between groups (mean difference 0.2, 95% CI -0.4 to 0.8).</p></sec>
+      </abstract>
+      <abstract abstract-type="graphical"><p>Graphical abstract text that should be ignored.</p></abstract>
+    </article-meta>
+  </front>
+  <body>
+    <sec id="s1">
+      <title>1. Introduction</title>
+      <p>Raw milk consumption has increased <xref ref-type="bibr" rid="R1">[1]</xref>.</p>
+    </sec>
+    <sec id="s2" sec-type="materials|methods">
+      <title>2. Materials and Methods</title>
+      <sec id="s2-1">
+        <title>2.1. Participants</title>
+        <p>We enrolled <italic>120 adults</italic> aged 18 to 65.</p>
+      </sec>
+      <sec id="s2-2">
+        <title>2.2. Statistical analysis</title>
+        <p>We used a linear mixed model with <inline-formula><mml:math><mml:mi>α</mml:mi></mml:math></inline-formula> = 0.05.</p>
+      </sec>
+    </sec>
+    <sec id="s3">
+      <title>3. Results</title>
+      <p>Of 120 randomized participants, 112 completed both periods.</p>
+      <table-wrap id="T1">
+        <label>Table 1</label>
+        <caption><p>Symptom scores by milk type</p></caption>
+        <table><thead><tr><th>Milk</th><th>Score</th></tr></thead>
+        <tbody><tr><td>Raw</td><td>4.1</td></tr><tr><td>Pasteurized</td><td>3.9</td></tr></tbody></table>
+      </table-wrap>
+      <fig id="F1"><label>Figure 1</label><caption><p>Flow of participants.</p></caption><graphic xlink:href="fig1.jpg"/></fig>
+    </sec>
+    <sec id="s4">
+      <title>4. Discussion</title>
+      <p>Raw milk did not reduce symptoms.</p>
+      <sec id="s4-1">
+        <title>4.1. Strengths and limitations</title>
+        <p>Participants were not blinded to milk taste.</p>
+      </sec>
+      <sec id="s4-2">
+        <title>4.2. Comparison with other studies</title>
+        <p>Our findings agree with earlier trials.</p>
+      </sec>
+    </sec>
+    <sec id="s5" sec-type="conclusions">
+      <title>5. Conclusions</title>
+      <p>Raw milk was not better tolerated than pasteurized milk.</p>
+    </sec>
+    <supplementary-material id="S1"><caption><p>Supplementary data</p></caption></supplementary-material>
+  </body>
+  <back>
+    <ack><p>We thank the participants.</p></ack>
+    <ref-list><ref id="R1"><mixed-citation>Cited background study.</mixed-citation></ref></ref-list>
+  </back>
+</article>

@@ -5,7 +5,7 @@ import httpx2 as httpx
 import pytest
 
 from app.services import document_download as download
-from app.services.full_text import FullTextUnavailable
+from app.services.study_documents import FullTextUnavailable
 
 
 @pytest.mark.anyio

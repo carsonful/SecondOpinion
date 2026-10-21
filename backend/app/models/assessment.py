@@ -24,7 +24,10 @@ class StudyAssessment(BaseModel):
     assessment_status: Literal["pending", "completed", "unavailable", "skipped"] = "pending"
     assessment_basis: Literal["abstract", "full_text"] | None = None
     source_url: str | None = None
-    source_kind: Literal["pmc", "publisher_html", "downloaded_pdf", "uploaded_pdf"] | None = None
+    source_kind: Literal["pmc", "downloaded_pdf", "uploaded_pdf"] | None = None
+    # Which full-text tier the assessed record came from; None for uploaded PDFs.
+    source_tier: Literal["pmc_fulltext", "oa_pdf", "abstract_only"] | None = None
+    license: str | None = None
     coverage_note: str | None = None
     summary: str | None = None
     measurement_warnings: list[str] = Field(default_factory=list)

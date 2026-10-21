@@ -7,8 +7,7 @@ from urllib.parse import urljoin
 
 import httpx2 as httpx
 
-from app.services.full_text import FullTextUnavailable
-from app.services.study_documents import MAX_DOCUMENT_BYTES
+from app.services.study_documents import FullTextUnavailable, MAX_DOCUMENT_BYTES
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,8 +25,20 @@ class Settings(BaseSettings):
     ncbi_email: str | None = None
     ncbi_tool: str = "SecondOpinion"
 
-    openalex_api_key: SecretStr | None = None
+    # Unpaywall requires a real contact email; falls back to NCBI_EMAIL when unset.
     unpaywall_email: str | None = None
+
+    # Azure AI Document Intelligence parses open-access PDFs (prebuilt layout model).
+    # Without both values, studies that only have a PDF fall back to their abstract.
+    azure_document_intelligence_endpoint: str | None = None
+    azure_document_intelligence_api_key: SecretStr | None = None
+
+    # Full-text retrieval: where records are cached, how many studies are fetched
+    # at once, how long one study may take, and its token budget in a Foundry prompt.
+    full_text_cache_dir: Path = Path(__file__).resolve().parents[1] / ".cache" / "full_text"
+    full_text_concurrency: int = Field(default=4, ge=1, le=16)
+    full_text_study_timeout: float = Field(default=45.0, gt=0)
+    study_token_budget: int = Field(default=6000, ge=500)
 
 
 @lru_cache

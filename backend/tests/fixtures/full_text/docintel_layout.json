@@ -1,0 +1,213 @@
+{
+ "status": "succeeded",
+ "createdDateTime": "2026-10-21T12:00:00Z",
+ "lastUpdatedDateTime": "2026-10-21T12:00:05Z",
+ "analyzeResult": {
+  "apiVersion": "2024-11-30",
+  "modelId": "prebuilt-layout",
+  "content": "Fermented dairy and bone density in older adults: a cohort study\nJournal of Example Nutrition 2023\nJane Doe, John Roe\nAbstract\nWe followed 2,400 adults over 65 for ten years to relate fermented dairy intake to bone mineral density.\n1 Introduction\nFermented dairy has been linked to bone health.\n2 Methods\nParticipants completed food frequency questionnaires at baseline. Bone density was measured by DXA.\n2\n\u00a9 2023 The Authors\n3 Results\nHigher intake was associated with 1.2% higher hip bone density (95% CI 0.4 to 2.0).\n4 Discussion\nFermented dairy may support bone health in older adults.\nLimitations\nDiet was self-reported and residual confounding is possible.\nReferences\n1. Earlier cohort study.",
+  "paragraphs": [
+   {
+    "role": "title",
+    "content": "Fermented dairy and bone density in older adults: a cohort study",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "pageHeader",
+    "content": "Journal of Example Nutrition 2023",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Jane Doe, John Roe",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "Abstract",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "We followed 2,400 adults over 65 for ten years to relate fermented dairy intake to bone mineral density.",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "1 Introduction",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Fermented dairy has been linked to bone health.",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "2 Methods",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Participants completed food frequency questionnaires at baseline. Bone density was measured by DXA.",
+    "boundingRegions": [
+     {
+      "pageNumber": 1,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "pageNumber",
+    "content": "2",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "pageFooter",
+    "content": "\u00a9 2023 The Authors",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "3 Results",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Higher intake was associated with 1.2% higher hip bone density (95% CI 0.4 to 2.0).",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "4 Discussion",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Fermented dairy may support bone health in older adults.",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "Limitations",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "Diet was self-reported and residual confounding is possible.",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "role": "sectionHeading",
+    "content": "References",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   },
+   {
+    "content": "1. Earlier cohort study.",
+    "boundingRegions": [
+     {
+      "pageNumber": 2,
+      "polygon": []
+     }
+    ],
+    "spans": []
+   }
+  ]
+ }
+}

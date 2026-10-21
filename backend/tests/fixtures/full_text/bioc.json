@@ -1,0 +1,30 @@
+[{
+  "source": "PMC",
+  "date": "20261021",
+  "key": "pmc.key",
+  "infons": {},
+  "documents": [{
+    "id": "9900001",
+    "infons": {"license": "CC BY"},
+    "passages": [
+      {"offset": 0, "infons": {"section_type": "TITLE", "type": "front", "license": "CC BY", "article-id_pmid": "99000001", "article-id_pmc": "9900001"}, "text": "Raw versus pasteurized milk and gastrointestinal symptoms: a randomized crossover trial"},
+      {"offset": 90, "infons": {"section_type": "ABSTRACT", "type": "abstract_title_1"}, "text": "Background"},
+      {"offset": 101, "infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "Raw milk is claimed to be better tolerated than pasteurized milk."},
+      {"offset": 170, "infons": {"section_type": "INTRO", "type": "title_1"}, "text": "1. Introduction"},
+      {"offset": 186, "infons": {"section_type": "INTRO", "type": "paragraph"}, "text": "Raw milk consumption has increased [1]."},
+      {"offset": 230, "infons": {"section_type": "METHODS", "type": "title_1"}, "text": "2. Materials and Methods"},
+      {"offset": 255, "infons": {"section_type": "METHODS", "type": "title_2"}, "text": "2.1. Participants"},
+      {"offset": 273, "infons": {"section_type": "METHODS", "type": "paragraph"}, "text": "We enrolled 120 adults aged 18 to 65."},
+      {"offset": 312, "infons": {"section_type": "RESULTS", "type": "title_1"}, "text": "3. Results"},
+      {"offset": 323, "infons": {"section_type": "RESULTS", "type": "paragraph"}, "text": "Of 120 randomized participants, 112 completed both periods."},
+      {"offset": 390, "infons": {"section_type": "TABLE", "type": "table_caption"}, "text": "Symptom scores by milk type"},
+      {"offset": 420, "infons": {"section_type": "DISCUSS", "type": "title_1"}, "text": "4. Discussion"},
+      {"offset": 434, "infons": {"section_type": "DISCUSS", "type": "paragraph"}, "text": "Raw milk did not reduce symptoms."},
+      {"offset": 470, "infons": {"section_type": "DISCUSS", "type": "title_2"}, "text": "4.1. Strengths and limitations"},
+      {"offset": 501, "infons": {"section_type": "DISCUSS", "type": "paragraph"}, "text": "Participants were not blinded to milk taste."},
+      {"offset": 550, "infons": {"section_type": "DISCUSS", "type": "title_2"}, "text": "4.2. Comparison with other studies"},
+      {"offset": 585, "infons": {"section_type": "DISCUSS", "type": "paragraph"}, "text": "Our findings agree with earlier trials."},
+      {"offset": 630, "infons": {"section_type": "REF", "type": "ref"}, "text": "Cited background study."}
+    ]
+  }]
+}]

@@ -31,6 +31,10 @@ RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 # Cap on how long we honor a Retry-After header, so a user request never hangs.
 MAX_RETRY_AFTER = 10.0
 
+# Only studies with an abstract can be summarized and graded, so every search asks
+# PubMed to filter on it; the top N results then all carry an abstract.
+ABSTRACT_FILTER = "hasabstract[filter]"
+
 # EFetch accepts long ID lists, but URLs get unwieldy past a couple hundred.
 MAX_FETCH_BATCH = 200
 
@@ -66,6 +70,10 @@ class PubMedClient:
         self._limiter = rate_limiter or RateLimiter(RATE_WITH_KEY if api_key else RATE_WITHOUT_KEY)
         self._sleep = sleep
 
+    @property
+    def rate_limiter(self) -> RateLimiter:
+        return self._limiter
+
     @classmethod
     def from_settings(cls, settings: Settings, http_client: httpx.AsyncClient) -> "PubMedClient":
         return cls(
@@ -90,7 +98,7 @@ class PubMedClient:
         """Run an ESearch. Returns (PMIDs in relevance order, total match count, query translation)."""
         response = await self._get(
             "esearch.fcgi",
-            {"db": "pubmed", "term": query, "retmax": limit, "retmode": "json", "sort": "relevance"},
+            {"db": "pubmed", "term": f"({query}) AND {ABSTRACT_FILTER}", "retmax": limit, "retmode": "json", "sort": "relevance"},
         )
         try:
             result = response.json()["esearchresult"]
