@@ -1,0 +1,16 @@
+{
+  "doi": "10.5555/so.0002",
+  "doi_url": "https://doi.org/10.5555/so.0002",
+  "title": "Fermented dairy and bone density in older adults: a cohort study",
+  "is_oa": true,
+  "oa_status": "hybrid",
+  "best_oa_location": {
+    "url": "https://publisher.example.org/articles/so.0002.pdf",
+    "url_for_pdf": "https://publisher.example.org/articles/so.0002.pdf",
+    "url_for_landing_page": "https://publisher.example.org/articles/so.0002",
+    "license": "cc-by-nc",
+    "host_type": "publisher",
+    "version": "publishedVersion"
+  },
+  "oa_locations": []
+}

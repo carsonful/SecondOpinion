@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "responseDate": "2026-10-21 12:00:00",
+  "request": "ids=99000001%2C99000002%2C99000003;idtype=pmid;format=json;tool=SecondOpinion",
+  "records": [
+    {"pmcid": "PMC9900001", "pmid": "99000001", "doi": "10.5555/so.0001"},
+    {"pmid": "99000002", "doi": "10.5555/so.0002"},
+    {"pmid": "99000003", "status": "error", "errmsg": "Identifier not found in PMC"}
+  ]
+}
