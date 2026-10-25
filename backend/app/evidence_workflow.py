@@ -1,12 +1,14 @@
 """Small functions to fill in independently as the team builds the workflow.
 
 Normalization calls Azure Foundry; scoring and verdicts remain unimplemented.
+Verdicts only accept evidence that passed the integrity gate in services/integrity.py.
 See docs/evidence-grading.md for the provisional grading rules.
 """
 
 from collections.abc import Sequence
 
 from app.evidence_models import Claim, EvidenceScore, Study, Verdict
+from app.services.integrity import AdmittedEvidence, require_admitted
 from app.services.normalization import normalize_claim as normalize_search_claim
 
 
@@ -35,11 +37,16 @@ def score_study(claim: Claim, study: Study) -> EvidenceScore:
     raise NotImplementedError("Evidence scoring is not implemented yet")
 
 
-def generate_verdict(claim: Claim, scores: Sequence[EvidenceScore]) -> Verdict:
+def generate_verdict(claim: Claim, evidence: Sequence[AdmittedEvidence]) -> Verdict:
     """TODO: summarize assessed findings using team-approved verdict rules.
+
+    `evidence` must be GateResult.admitted from apply_integrity_gate(), so retracted
+    and withheld studies can never reach this function (#19). Keep the
+    require_admitted() check below as the first line when implementing this.
 
     Reject scores for other claims. Weights alone cannot establish an outcome
     or confidence; extend these inputs with findings and citations first.
     Unimplemented analysis must not be returned as an 'unproven' verdict.
     """
+    require_admitted(evidence)
     raise NotImplementedError("Verdict generation is not implemented yet")

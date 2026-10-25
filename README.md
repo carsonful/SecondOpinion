@@ -64,6 +64,8 @@ PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, o
 
 Crossref notices come from both publishers and the Retraction Watch database. A report's `retracted` flag is `None` when Crossref has no record of the DOI (unchecked) and `False` when it was checked and no notice was found, which is not the same as verified trustworthy. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
 
+Every study passes through the integrity gate (`app/services/integrity.py`) before it can reach a verdict. Retracted studies (per Crossref or PubMed) are excluded and studies with an unresolved expression of concern are withheld, both with an effective weight of 0. Corrected studies stay in without a deduction, following `docs/evidence-grading.md`. Blocked studies are still returned for the evidence table with their notice links. `generate_verdict` only accepts `GateResult.admitted`, and there is no setting to turn the exclusion off.
+
 ### Frontend
 
 ```
