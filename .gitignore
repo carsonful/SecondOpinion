@@ -151,5 +151,6 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.private-tests/
 .coverage
 coverage.xml

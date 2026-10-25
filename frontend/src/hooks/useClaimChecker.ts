@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { VerdictData } from '../types'
+import { useRef, useState } from 'react'
+import { ClaimCandidates, VerdictData } from '../types'
 import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
 import { hydrateExample } from '../data/hydrateExample'
 
@@ -11,13 +11,19 @@ export function useClaimChecker() {
   const [errorMessage, setErrorMessage] = useState('')
   const [verdict, setVerdict] = useState<VerdictData | null>(null)
   const [activeClaim, setActiveClaim] = useState('')
+  const [candidates, setCandidates] = useState<ClaimCandidates | null>(null)
+  const requestId = useRef(0)
 
   async function checkClaim(text: string) {
     const trimmed = text.trim()
     if (!trimmed) return
 
+    const currentRequest = ++requestId.current
+
     setStatus('loading')
     setErrorMessage('')
+    setVerdict(null)
+    setCandidates(null)
 
     const example = EXAMPLE_CLAIMS.find(({ claim }) => claim.toLowerCase() === trimmed.toLowerCase())
 
@@ -30,35 +36,44 @@ export function useClaimChecker() {
             body: JSON.stringify({ claim: trimmed }),
           })
 
+      if (currentRequest !== requestId.current) return
+
       if (!res.ok) {
         setErrorMessage(
           example
             ? 'This saved example is unavailable right now. Try again in a moment.'
-            : res.status === 404
-              ? 'No studies matched this claim.'
-              : 'Something went wrong on our end. Try again in a moment.'
+            : res.status === 422
+              ? 'Enter one clear health claim of up to 2,000 characters.'
+              : res.status === 503
+                ? 'An evidence service is unavailable. Try again shortly.'
+                : 'Something went wrong on our end. Try again in a moment.'
         )
         setStatus('error')
         return
       }
 
       const data = await res.json()
+      if (currentRequest !== requestId.current) return
       setStatus('success')
       setActiveClaim(trimmed)
-      setVerdict(example ? hydrateExample(data) : data)
+      if (example) setVerdict(hydrateExample(data))
+      else setCandidates(data)
     } catch {
+      if (currentRequest !== requestId.current) return
       setErrorMessage("Can't reach the server right now.")
       setStatus('error')
     }
   }
 
   function reset() {
+    requestId.current++
     setClaim('')
     setStatus('idle')
     setErrorMessage('')
     setVerdict(null)
     setActiveClaim('')
+    setCandidates(null)
   }
 
-  return { claim, setClaim, status, errorMessage, verdict, activeClaim, checkClaim, reset }
+  return { claim, setClaim, status, errorMessage, verdict, candidates, activeClaim, checkClaim, reset }
 }

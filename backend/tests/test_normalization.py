@@ -24,9 +24,9 @@ EXTRACTED = {
 
 def settings(**overrides):
     values = {
-        "azure_foundry_endpoint": "https://example.services.ai.azure.com",
-        "azure_foundry_deployment": "test-deployment",
-        "azure_foundry_api_key": "test-secret",
+        "azure_inference_endpoint": "https://example.services.ai.azure.com",
+        "azure_model_deployment_name": "test-deployment",
+        "azure_inference_api_key": "test-secret",
     }
     return Settings(_env_file=None, **{**values, **overrides})
 
@@ -114,7 +114,7 @@ def test_rejection_is_logged(caplog):
 
 def test_missing_configuration():
     with pytest.raises(FoundryUnavailableError, match="required"):
-        normalize_claim("zinc cures colds", settings=settings(azure_foundry_api_key=None))
+        normalize_claim("zinc cures colds", settings=settings(azure_inference_api_key=None))
 
 
 def test_timeout():

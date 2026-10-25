@@ -105,13 +105,123 @@ precision; this version defines starting weights only.
 
 ### Adjusting the defaults later
 
-Treat this table as the source of truth for `base_weights_v0.1` until implemented
-in configuration. Store weights centrally when implemented, rather than embedding
-them in prompts. Record the weight version, resolved design, base weight,
-eligibility reason, and effective weight with each assessment. Changes should
-increment the version and document the rationale so older results stay
-interpretable. These values are documentation only; they do not change runtime
-grading yet.
+The runtime source of truth for `base_weights_v0.1` is
+[`backend/app/data/base_weights_v0.1.json`](../backend/app/data/base_weights_v0.1.json).
+It stores every weight and its rationale centrally. The loader rejects missing
+design rules, invalid numeric weights, and numeric defaults for unknown designs
+or unresolved syntheses. Change the version whenever changing a rule, and update
+this table and its tests together. Preserve previous versions when persisted
+assessments depend on them.
+
+### Runtime contract (issue #17)
+
+`get_design_weight()` in `app/services/weighting.py` accepts one already resolved
+design. These identifiers are the contract for metadata extraction (#14):
+
+| Identifier | Meaning |
+| --- | --- |
+| `randomized_controlled_trial` | Randomized evidence |
+| `intervention_randomization_unknown` | Intervention evidence with unconfirmed randomization |
+| `cohort` | Observational cohort |
+| `case_control` | Observational case-control |
+| `cross_sectional` | Observational cross-sectional |
+| `observational_subtype_unknown` | Confirmed observational study with unresolved subtype |
+| `case_report_or_series` | Descriptive evidence |
+| `general_review` | Background review |
+| `commentary` | Commentary without an established original research design |
+| `research_synthesis` | Systematic review or meta-analysis; needs an established included design |
+| `unknown` | Missing, conflicting, or unresolved design |
+
+Missing or unrecognized identifiers return `unknown` with a `null` base weight
+and an explanation. This service does not interpret raw PubMed publication tags
+or abstracts. The extractor must resolve conflicting tags before supplying a
+design; passing a list of tags as a string does not add their weights.
+
+For `research_synthesis`, an optional `included_design` supplies the established
+homogeneous design or one separately reported design group. A synthesis of
+randomized trials therefore gets 8, with `resolved_design=research_synthesis`
+and `weighted_design=randomized_controlled_trial`. Mixed/unresolved included
+designs, another synthesis, a general review, or commentary do not establish an
+included primary design and leave the weight `null`. The caller must still
+resolve overlap before any future aggregation; this lookup cannot detect it.
+
+`evidence_workflow.score_study()` links this result to the claim and study IDs,
+records `component_scores.base_weight`, `weight_version`, `resolved_design`,
+`weighted_design`, and `weight_reason`. Supply the canonical design through
+`Study.study_type`, and any established synthesis design through
+`Study.synthesis_included_design`. Raw input remains on the original study.
+`final_weight` and `eligibility_reason` remain unset until assessed; this step
+does not determine relevance, findings, or suitability for human intervention
+claims. A subsequent integrity gate retains base-weight provenance and sets a
+blocked study's final contribution to zero. Passing the integrity gate alone
+does not establish a final contribution.
+
+These weights are available in the internal workflow and candidate retrieval
+endpoint. The endpoint resolves metadata with `app/services/metadata.py` and
+returns `metadata` and `weight` for each study. The frontend displays base
+weights, participant counts, reasons, source passages, rule versions, and
+integrity notices in a sortable, expandable evidence table (#26). Final
+contributions remain unknown pending claim assessment, except that the integrity
+gate sets blocked contributions to zero.
+
+### Extraction limits and validation (issue #14)
+
+The deterministic extractor maps indexed publication types to the ladder and
+retains conflicting or missing designs as unknown. It only refines confirmed
+observational evidence when the abstract explicitly describes its own subtype.
+Generic Journal Article or Letter tags do not establish a design. Abstract topic
+mentions cannot override a review classification. Research syntheses keep their
+included designs unresolved until a separate extraction step establishes them.
+
+Sample sizes require an explicit total enrollment/recruitment statement; the
+matching source sentence is returned. Planned counts, per-group counts,
+conflicting totals, missing abstracts, and review participant totals remain
+unknown. This intentionally misses many valid counts rather than adding arm
+counts or guessing from unrelated numbers. An animal-only MeSH flag is shown
+separately and does not establish a human participant count.
+
+The new regression suite, recorded review set, and evaluation tooling are
+maintained privately for now. Synthetic regression checks cover tag precedence,
+ambiguity, observational self-descriptions, and participant-count edge cases;
+they do not measure clinical extraction accuracy.
+
+Issue #14's independent 20-study review remains pending. Reference labels must
+come from source review, not the extractor's predictions. Accuracy must be
+reported separately from the number of counts the extractor can resolve, so
+an unknown result cannot conceal missed information. Clinical extraction
+accuracy has not been measured yet.
+
+### Rationale and evidence-hierarchy references
+
+The design distinctions are informed by the
+[Oxford CEBM levels of evidence (2009)](https://www.cebm.ox.ac.uk/resources/levels-of-evidence/oxford-centre-for-evidence-based-medicine-levels-of-evidence-march-2009)
+and [2011 introduction](https://www.cebm.ox.ac.uk/resources/levels-of-evidence/levels-of-evidence-introductory-document).
+They provide a basis for distinguishing randomized comparisons, observational
+designs, and descriptive reports for intervention questions. The 2011 guidance
+also cautions that a nominally higher evidence level need not produce a stronger
+answer in a particular case.
+
+The [GRADE overview](https://book.gradepro.org/guideline/overview-of-the-grade-approach)
+explains why randomized and nonrandomized intervention evidence have different
+starting certainty and why design alone is insufficient. Our numeric values and
+spacing are project heuristics, not numbers supplied or validated by these
+frameworks. In particular:
+
+- 8 for randomized trials reserves room on the 0–10 scale without treating
+  randomization as perfect quality; 5 reflects unconfirmed randomization.
+- 4/3/2 distinguish the documented cohort, case-control, and cross-sectional
+  defaults. These exact differences are provisional, not measured reliability
+  ratios. Confirmed observational evidence of unknown subtype uses 3 as a
+  declared fallback rather than claiming the subtype is known.
+- 1 preserves descriptive signals without equating them to a comparative study.
+- 0 for background reviews and commentary avoids treating discussion as an
+  independent comparison. If original research is established, use its design.
+- `null` preserves missing information. A synthesis inherits an established
+  included design so a review label alone cannot create additional weight.
+
+These references support the rationale for the design distinctions; they do
+not validate adding the weights, converting them to confidence percentages,
+or using them alone to determine a verdict.
 
 ## Findings: separate from the study grade
 
