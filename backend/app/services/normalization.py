@@ -47,14 +47,14 @@ of search terms, and do not include Boolean search syntax.
 def _request_extraction(
     raw_text: str, settings: Settings, transport: httpx.BaseTransport | None,
 ) -> Extraction:
-    if not all((settings.azure_foundry_endpoint, settings.azure_foundry_deployment,
-                settings.azure_foundry_api_key)):
-        raise FoundryUnavailableError("Azure Foundry endpoint, deployment, and API key are required")
-    url = httpx.URL(settings.azure_foundry_endpoint.rstrip("/"))
+    if not all((settings.azure_inference_endpoint, settings.azure_model_deployment_name,
+                settings.azure_inference_api_key)):
+        raise FoundryUnavailableError("AZURE_INFERENCE_ENDPOINT, AZURE_MODEL_DEPLOYMENT_NAME, and AZURE_INFERENCE_API_KEY are required")
+    url = httpx.URL(settings.azure_inference_endpoint.rstrip("/"))
     if url.scheme != "https" or not url.host or url.query or url.fragment:
-        raise FoundryUnavailableError("Use an HTTPS Foundry resource endpoint")
+        raise FoundryUnavailableError("AZURE_INFERENCE_ENDPOINT must be an HTTPS resource endpoint")
     if url.path not in ("", "/", "/openai/v1"):
-        raise FoundryUnavailableError("Use a resource endpoint or its /openai/v1 URL")
+        raise FoundryUnavailableError("AZURE_INFERENCE_ENDPOINT must be a resource endpoint or its /openai/v1 URL; project URLs are not supported")
     endpoint = str(url).rstrip("/")
     if url.path != "/openai/v1":
         endpoint += "/openai/v1"
@@ -62,9 +62,9 @@ def _request_extraction(
         with httpx.Client(timeout=60, transport=transport) as client:
             response = client.post(
                 endpoint + "/chat/completions",
-                headers={"api-key": settings.azure_foundry_api_key.get_secret_value()},
+                headers={"api-key": settings.azure_inference_api_key.get_secret_value()},
                 json={
-                    "model": settings.azure_foundry_deployment,
+                    "model": settings.azure_model_deployment_name,
                     "messages": [
                         {"role": "system", "content": PROMPT},
                         {"role": "user", "content": raw_text},

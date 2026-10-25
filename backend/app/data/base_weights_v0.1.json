@@ -1,0 +1,49 @@
+{
+  "version": "base_weights_v0.1",
+  "rules": {
+    "randomized_controlled_trial": {
+      "weight": 8,
+      "rationale": "Randomized intervention evidence starts at 8; randomization supports causal comparison but does not establish low bias."
+    },
+    "intervention_randomization_unknown": {
+      "weight": 5,
+      "rationale": "Intervention evidence starts at 5 because randomization is unconfirmed."
+    },
+    "cohort": {
+      "weight": 4,
+      "rationale": "Cohort evidence starts at 4; timing can be established but confounding remains possible."
+    },
+    "case_control": {
+      "weight": 3,
+      "rationale": "Case-control evidence starts at 3; selection and recall limitations require assessment."
+    },
+    "cross_sectional": {
+      "weight": 2,
+      "rationale": "Cross-sectional evidence starts at 2 because an association does not reliably establish timing."
+    },
+    "observational_subtype_unknown": {
+      "weight": 3,
+      "rationale": "Confirmed observational evidence of unresolved subtype uses the provisional middle value 3; this is distinct from unknown study design."
+    },
+    "case_report_or_series": {
+      "weight": 1,
+      "rationale": "Case reports and series start at 1 as descriptive signals with limited basis for comparative effects."
+    },
+    "general_review": {
+      "weight": 0,
+      "rationale": "General reviews supply background with no independent contribution to the weighted comparison; zero is not a quality judgment."
+    },
+    "commentary": {
+      "weight": 0,
+      "rationale": "Commentary supplies context by default; original research must first be resolved to its actual design."
+    },
+    "research_synthesis": {
+      "weight": null,
+      "rationale": "A synthesis requires an established included design or separately reported design group. Mixed or unresolved designs remain unknown; the review label earns no bonus."
+    },
+    "unknown": {
+      "weight": null,
+      "rationale": "Missing, unrecognized, or unresolved design information has an unknown weight, not zero."
+    }
+  }
+}

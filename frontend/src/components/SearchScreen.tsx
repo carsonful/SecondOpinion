@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useRef } from 'react'
 import { Status } from '../hooks/useClaimChecker'
-import { VerdictData } from '../types'
+import { ClaimCandidates, VerdictData } from '../types'
 import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
 import VerdictResult from './result/VerdictResult'
+import CandidateResults from './result/CandidateResults'
 import './SearchScreen.css'
 
 const CAP_COLORS = [
@@ -24,6 +25,7 @@ interface SearchScreenProps {
   errorMessage: string
   checkClaim: (text: string) => void
   verdict: VerdictData | null
+  candidates: ClaimCandidates | null
   activeClaim: string
   onHowItWorks?: () => void
 }
@@ -39,11 +41,12 @@ export default function SearchScreen({
   errorMessage,
   checkClaim,
   verdict,
+  candidates,
   activeClaim,
   onHowItWorks,
 }: SearchScreenProps) {
   const resultRef = useRef<HTMLDivElement>(null)
-  const showResult = status === 'success' && verdict
+  const showResult = status === 'success' && Boolean(verdict || candidates)
 
   // Bring the result into view when it arrives
   useEffect(() => {
@@ -86,6 +89,7 @@ export default function SearchScreen({
                 type="text"
                 placeholder='Try "is raw milk better than pasteurized?"'
                 value={claim}
+                maxLength={2000}
                 onChange={(e) => setClaim(e.target.value)}
               />
             </label>
@@ -133,12 +137,14 @@ export default function SearchScreen({
               <p className="search__status-sub">
                 Try rephrasing with more specific terms, like the ingredient or condition involved.
               </p>
+              <button type="button" onClick={() => checkClaim(claim)}>Try again</button>
             </div>
           )}
 
           {showResult && verdict && (
             <VerdictResult key={activeClaim} verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
           )}
+          {showResult && candidates && <CandidateResults result={candidates} />}
 
           {status === 'idle' && (
             <div className="checks">

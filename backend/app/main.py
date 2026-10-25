@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import get_settings
-from app.routers import crossref, examples, health, normalization, pubmed
+from app.routers import claims, crossref, examples, health, normalization, pubmed
 from app.services.crossref import CrossrefClient
 from app.services.examples import initialize_examples
 from app.services.pubmed import PubMedClient
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api")
     app.include_router(pubmed.router, prefix="/api")
     app.include_router(normalization.router, prefix="/api")
+    app.include_router(claims.router, prefix="/api")
     app.include_router(examples.router, prefix="/api")
     app.include_router(crossref.router, prefix="/api")
     return app

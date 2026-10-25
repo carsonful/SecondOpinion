@@ -12,9 +12,9 @@ class Settings(BaseSettings):
         env_file=Path(__file__).resolve().parents[1] / ".env", extra="ignore"
     )
 
-    azure_foundry_endpoint: str | None = None
-    azure_foundry_deployment: str | None = None
-    azure_foundry_api_key: SecretStr | None = None
+    azure_inference_endpoint: str | None = None
+    azure_model_deployment_name: str | None = None
+    azure_inference_api_key: SecretStr | None = None
     database_url: SecretStr | None = None
 
     app_name: str = "SecondOpinion API"
