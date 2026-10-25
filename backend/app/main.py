@@ -8,25 +8,30 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import get_settings
-from app.routers import examples, health, normalization, pubmed
+from app.routers import crossref, examples, health, normalization, pubmed
+from app.services.crossref import CrossrefClient
 from app.services.examples import initialize_examples
-from app.services.pubmed import PubMedClient, PubMedResponseError, PubMedUnavailableError
+from app.services.pubmed import PubMedClient
+from app.services.upstream import UpstreamResponseError, UpstreamUnavailableError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     initialize_examples()
-    # One shared client per process, so every request goes through the same rate limiter.
+    # One shared client per service and process, so every request goes through the same rate limiter.
+    settings = get_settings()
     async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as http_client:
-        app.state.pubmed_client = PubMedClient.from_settings(get_settings(), http_client)
+        app.state.pubmed_client = PubMedClient.from_settings(settings, http_client)
+        app.state.crossref_client = CrossrefClient.from_settings(settings, http_client)
         yield
 
 
-async def pubmed_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
-    return JSONResponse(status_code=503, content={"detail": "PubMed is unavailable, try again shortly"})
+async def upstream_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
+    service = getattr(exc, "service", "An evidence source")
+    return JSONResponse(status_code=503, content={"detail": f"{service} is unavailable, try again shortly"})
 
 
-async def pubmed_response_handler(request: Request, exc: Exception) -> JSONResponse:
+async def upstream_response_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
@@ -41,13 +46,14 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.add_exception_handler(PubMedUnavailableError, pubmed_unavailable_handler)
-    app.add_exception_handler(PubMedResponseError, pubmed_response_handler)
+    app.add_exception_handler(UpstreamUnavailableError, upstream_unavailable_handler)
+    app.add_exception_handler(UpstreamResponseError, upstream_response_handler)
 
     app.include_router(health.router, prefix="/api")
     app.include_router(pubmed.router, prefix="/api")
     app.include_router(normalization.router, prefix="/api")
     app.include_router(examples.router, prefix="/api")
+    app.include_router(crossref.router, prefix="/api")
     return app
 
 

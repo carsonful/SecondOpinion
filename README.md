@@ -57,9 +57,12 @@ Endpoints (full schemas at `/docs`):
 | GET | `/api/health` | Status and API version |
 | GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
 | GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
+| GET | `/api/crossref/notices?doi=...` | Retractions, corrections, and expressions of concern for a paper, each with a link to the notice |
 | GET | `/api/examples/{slug}` | PostgreSQL result for `raw-milk`, `cold-showers`, or `cracking-knuckles` |
 
-PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
+PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Crossref calls work the same way (set `CROSSREF_MAILTO` for the faster "polite" pool).
+
+Crossref notices come from both publishers and the Retraction Watch database. A report's `retracted` flag is `None` when Crossref has no record of the DOI (unchecked) and `False` when it was checked and no notice was found, which is not the same as verified trustworthy. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
 
 ### Frontend
 

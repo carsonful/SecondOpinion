@@ -1,0 +1,206 @@
+{
+ "status": "ok",
+ "message-type": "work",
+ "message-version": "1.0.0",
+ "message": {
+  "DOI": "10.1016/s0140-6736(20)31180-6",
+  "title": [
+   "RETRACTED: Hydroxychloroquine or chloroquine with or without a macrolide for treatment of COVID-19: a multinational registry analysis"
+  ],
+  "type": "journal-article",
+  "update-to": [
+   {
+    "DOI": "10.1016/s0140-6736(20)31174-0",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       22
+      ]
+     ],
+     "date-time": "2020-05-22T00:00:00Z",
+     "timestamp": 1590105600000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31290-3",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       22
+      ]
+     ],
+     "date-time": "2020-05-22T00:00:00Z",
+     "timestamp": 1590105600000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31324-6",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       22
+      ]
+     ],
+     "date-time": "2020-05-22T00:00:00Z",
+     "timestamp": 1590105600000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31528-2",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       22
+      ]
+     ],
+     "date-time": "2020-05-22T00:00:00Z",
+     "timestamp": 1590105600000
+    }
+   }
+  ],
+  "updated-by": [
+   {
+    "DOI": "10.1016/s0140-6736(20)31290-3",
+    "type": "expression_of_concern",
+    "label": "Expression of concern",
+    "source": "retraction-watch",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       6,
+       3
+      ]
+     ],
+     "date-time": "2020-06-03T00:00:00Z",
+     "timestamp": 1591142400000
+    },
+    "record-id": "23527"
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31249-6",
+    "type": "correction",
+    "label": "Correction",
+    "source": "retraction-watch",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       30
+      ]
+     ],
+     "date-time": "2020-05-30T00:00:00Z",
+     "timestamp": 1590796800000
+    },
+    "record-id": "23528"
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31324-6",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "retraction-watch",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       6,
+       5
+      ]
+     ],
+     "date-time": "2020-06-05T00:00:00Z",
+     "timestamp": 1591315200000
+    },
+    "record-id": "23529"
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31174-0",
+    "type": "retraction",
+    "label": "Retraction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       22
+      ]
+     ],
+     "date-time": "2020-05-22T00:00:00Z",
+     "timestamp": 1590105600000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31324-6",
+    "type": "erratum",
+    "label": "Erratum",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       6,
+       13
+      ]
+     ],
+     "date-time": "2020-06-13T00:00:00Z",
+     "timestamp": 1592006400000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31528-2",
+    "type": "erratum",
+    "label": "Erratum",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       7,
+       18
+      ]
+     ],
+     "date-time": "2020-07-18T00:00:00Z",
+     "timestamp": 1595030400000
+    }
+   },
+   {
+    "DOI": "10.1016/s0140-6736(20)31249-6",
+    "type": "erratum",
+    "label": "Erratum",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2020,
+       5,
+       30
+      ]
+     ],
+     "date-time": "2020-05-30T00:00:00Z",
+     "timestamp": 1590796800000
+    }
+   }
+  ]
+ }
+}

@@ -4,7 +4,6 @@ Docs: https://www.ncbi.nlm.nih.gov/books/NBK25499/
 """
 
 import asyncio
-import logging
 import re
 import xml.etree.ElementTree as ET
 from collections.abc import Awaitable, Callable
@@ -15,8 +14,12 @@ import httpx2 as httpx
 from app.config import Settings
 from app.models.pubmed import PubMedArticle, PubMedSearchResponse
 from app.services.rate_limiter import RateLimiter
-
-logger = logging.getLogger(__name__)
+from app.services.upstream import (
+    UpstreamError,
+    UpstreamResponseError,
+    UpstreamUnavailableError,
+    get_with_retries,
+)
 
 EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
@@ -25,27 +28,23 @@ EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 RATE_WITHOUT_KEY = 2.5
 RATE_WITH_KEY = 9.0
 
-MAX_RETRIES = 3
-RETRY_BASE_DELAY = 0.5
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
-# Cap on how long we honor a Retry-After header, so a user request never hangs.
-MAX_RETRY_AFTER = 10.0
-
 # EFetch accepts long ID lists, but URLs get unwieldy past a couple hundred.
 MAX_FETCH_BATCH = 200
 
 _YEAR_PATTERN = re.compile(r"\b(\d{4})\b")
 
 
-class PubMedError(Exception):
+class PubMedError(UpstreamError):
     """Base class for PubMed client failures."""
 
+    service = "PubMed"
 
-class PubMedUnavailableError(PubMedError):
+
+class PubMedUnavailableError(PubMedError, UpstreamUnavailableError):
     """PubMed could not be reached, or kept failing after retries."""
 
 
-class PubMedResponseError(PubMedError):
+class PubMedResponseError(PubMedError, UpstreamResponseError):
     """PubMed answered, but with something we could not use."""
 
 
@@ -129,46 +128,17 @@ class PubMedClient:
         if self._api_key:
             params["api_key"] = self._api_key
 
-        url = f"{EUTILS_BASE_URL}/{endpoint}"
-        for attempt in range(MAX_RETRIES + 1):
-            await self._limiter.acquire()
-            try:
-                response = await self._http.get(url, params=params)
-            except httpx.TransportError as exc:
-                if attempt == MAX_RETRIES:
-                    raise PubMedUnavailableError(f"Could not reach PubMed: {exc}") from exc
-                delay = RETRY_BASE_DELAY * 2**attempt
-                logger.warning("PubMed %s transport error (%s), retrying in %.1fs", endpoint, exc, delay)
-                await self._sleep(delay)
-                continue
-
-            if response.status_code in RETRYABLE_STATUS_CODES:
-                if attempt == MAX_RETRIES:
-                    raise PubMedUnavailableError(
-                        f"PubMed {endpoint} kept failing with HTTP {response.status_code}"
-                    )
-                delay = _retry_delay(response, attempt)
-                logger.warning(
-                    "PubMed %s returned HTTP %s, retrying in %.1fs", endpoint, response.status_code, delay
-                )
-                await self._sleep(delay)
-                continue
-
-            if response.is_error:
-                raise PubMedResponseError(f"PubMed {endpoint} returned HTTP {response.status_code}")
-            return response
-
-        raise AssertionError("unreachable")
-
-
-def _retry_delay(response: httpx.Response, attempt: int) -> float:
-    retry_after = response.headers.get("Retry-After")
-    if retry_after:
-        try:
-            return min(float(retry_after), MAX_RETRY_AFTER)
-        except ValueError:
-            pass
-    return RETRY_BASE_DELAY * 2**attempt
+        response = await get_with_retries(
+            self._http,
+            f"{EUTILS_BASE_URL}/{endpoint}",
+            params=params,
+            limiter=self._limiter,
+            sleep=self._sleep,
+            unavailable_error=PubMedUnavailableError,
+        )
+        if response.is_error:
+            raise PubMedResponseError(f"PubMed {endpoint} returned HTTP {response.status_code}")
+        return response
 
 
 def parse_efetch_xml(content: bytes) -> list[PubMedArticle]:

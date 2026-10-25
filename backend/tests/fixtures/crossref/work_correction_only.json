@@ -1,0 +1,31 @@
+{
+ "status": "ok",
+ "message-type": "work",
+ "message-version": "1.0.0",
+ "message": {
+  "DOI": "10.1088/1361-6595/aaebdb",
+  "title": [
+   "Mechanisms responsible for the initiation of a fast breakdown in an atmospheric discharge"
+  ],
+  "type": "journal-article",
+  "updated-by": [
+   {
+    "DOI": "10.1088/1361-6595/ab245f",
+    "type": "correction",
+    "label": "Correction",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2019,
+       7,
+       11
+      ]
+     ],
+     "date-time": "2019-07-11T00:00:00Z",
+     "timestamp": 1562803200000
+    }
+   }
+  ]
+ }
+}

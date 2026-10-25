@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     ncbi_email: str | None = None
     ncbi_tool: str = "SecondOpinion"
 
+    # Crossref. Sending a contact email moves us into the "polite" pool, which allows
+    # 10 requests/second and 3 at once instead of 5 requests/second, 1 at a time.
+    crossref_mailto: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
