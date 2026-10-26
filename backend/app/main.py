@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.config import get_settings
 from app.routers import claims, crossref, examples, health, normalization, pubmed
+from app.services.claims import ClaimsCache
 from app.services.crossref import CrossrefClient
 from app.services.examples import initialize_examples
 from app.services.pubmed import PubMedClient
@@ -38,6 +39,7 @@ async def upstream_response_handler(request: Request, exc: Exception) -> JSONRes
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
+    app.state.claims_cache = ClaimsCache.from_settings(settings)
 
     app.add_middleware(
         CORSMiddleware,

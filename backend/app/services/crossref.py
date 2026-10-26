@@ -110,6 +110,8 @@ class CrossrefClient:
                 f"{CROSSREF_BASE_URL}/works/{quote(doi, safe='')}",
                 params={"mailto": self._mailto} if self._mailto else None,
                 headers={"User-Agent": self._user_agent()},
+                # Crossref answers alias DOIs with a 301 to the canonical DOI's record.
+                follow_redirects=True,
                 limiter=self._limiter,
                 sleep=self._sleep,
                 unavailable_error=CrossrefUnavailableError,

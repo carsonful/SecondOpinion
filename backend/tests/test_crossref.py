@@ -253,6 +253,24 @@ async def test_check_many_dedupes_and_respects_the_concurrency_limit() -> None:
 
 
 @pytest.mark.anyio
+async def test_follows_crossref_redirects_for_alias_dois() -> None:
+    """Crossref sends some DOIs to their canonical form, e.g. pir.25-4-115 -> pir.25.4.115."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.raw_path.decode()
+        if "pir.25-4-115" in path:
+            return httpx.Response(301, headers={"Location": "/works/10.1542/pir.25.4.115"})
+        if path.startswith("/works/10.1542/pir.25.4.115"):
+            return httpx.Response(200, content=load_fixture("crossref/work_cochrane_clean.json"))
+        return httpx.Response(404)
+
+    report = await make_client(handler).check("10.1542/pir.25-4-115")
+
+    assert report.found is True
+    assert report.retracted is False
+
+
+@pytest.mark.anyio
 async def test_check_many_can_fail_the_whole_batch_when_asked() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if "31180" in request.url.raw_path.decode():

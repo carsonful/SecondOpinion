@@ -78,7 +78,8 @@ Crossref notices come from both publishers and the Retraction Watch database. A 
 
 `POST /api/claims` accepts `{"claim":"Does zinc cure colds?","limit":20}`.
 The frontend handoff contract and hosting requirements are in
-[`docs/claims-api.md`](docs/claims-api.md).
+[`docs/claims-api.md`](docs/claims-api.md). Repeated claims are served from an
+in-memory cache (add `?refresh=true` to skip it); see the caching section there.
 The claim must contain 1–2,000 characters; the optional limit is 1–100.
 Azure Foundry credentials are required for normalization. PostgreSQL is not
 required for this retrieval endpoint. The response has `status: "candidates"`,
