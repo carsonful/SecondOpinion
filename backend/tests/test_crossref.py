@@ -252,6 +252,40 @@ async def test_check_many_dedupes_and_respects_the_concurrency_limit() -> None:
     assert reports[CLEAN].retracted is False
 
 
+@pytest.mark.anyio
+async def test_check_many_can_fail_the_whole_batch_when_asked() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "31180" in request.url.raw_path.decode():
+            return httpx.Response(503)
+        return recorded_crossref(request)
+
+    with pytest.raises(CrossrefUnavailableError):
+        await make_client(handler).check_many([WAKEFIELD, SURGISPHERE, CLEAN], skip_failures=False)
+
+
+@pytest.mark.anyio
+async def test_check_many_skips_failed_lookups_by_default() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.raw_path.decode()
+        if "31180" in path:
+            return httpx.Response(503)
+        if "lungcan" in path:
+            return httpx.Response(200, content=b"not json")
+        return recorded_crossref(request)
+
+    reports = await make_client(handler).check_many([WAKEFIELD, SURGISPHERE, CONCERN_ONLY, CLEAN])
+
+    assert set(reports) == {WAKEFIELD, CLEAN}
+    assert reports[WAKEFIELD].retracted is True
+
+
+@pytest.mark.anyio
+async def test_check_many_with_crossref_down_returns_no_reports() -> None:
+    reports = await make_client(lambda _: httpx.Response(503)).check_many([WAKEFIELD, CLEAN])
+
+    assert reports == {}
+
+
 @pytest.fixture
 def api() -> Iterator[Callable[[Callable[[httpx.Request], httpx.Response]], TestClient]]:
     def build(handler: Callable[[httpx.Request], httpx.Response] = recorded_crossref) -> TestClient:

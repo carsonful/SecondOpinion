@@ -41,6 +41,7 @@ async def retrieve_candidates(
         if not duplicate:
             articles.append(article)
 
+    # One failed Crossref lookup must not fail the search; those studies stay "unchecked".
     reports = await crossref.check_many(
         doi for article in articles if (doi := article_doi(article)) is not None
     )
