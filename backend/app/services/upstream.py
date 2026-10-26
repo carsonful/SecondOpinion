@@ -40,6 +40,7 @@ async def get_with_retries(
     unavailable_error: type[UpstreamUnavailableError],
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
+    follow_redirects: bool = False,
 ) -> httpx.Response:
     """GET `url`, retrying throttling, server errors, and dropped connections with backoff.
 
@@ -49,7 +50,9 @@ async def get_with_retries(
     for attempt in range(MAX_RETRIES + 1):
         await limiter.acquire()
         try:
-            response = await http.get(url, params=params, headers=headers)
+            response = await http.get(
+                url, params=params, headers=headers, follow_redirects=follow_redirects
+            )
         except httpx.TransportError as exc:
             if attempt == MAX_RETRIES:
                 raise unavailable_error(f"Could not reach {service}: {exc}") from exc

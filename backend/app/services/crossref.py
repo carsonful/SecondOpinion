@@ -6,6 +6,7 @@ lists both in a work's `updated-by` field. Docs: https://api.crossref.org/swagge
 """
 
 import asyncio
+import logging
 import re
 from collections.abc import Awaitable, Callable, Iterable
 from datetime import date
@@ -24,6 +25,8 @@ from app.services.upstream import (
     UpstreamUnavailableError,
     get_with_retries,
 )
+
+logger = logging.getLogger(__name__)
 
 CROSSREF_BASE_URL = "https://api.crossref.org"
 
@@ -107,6 +110,8 @@ class CrossrefClient:
                 f"{CROSSREF_BASE_URL}/works/{quote(doi, safe='')}",
                 params={"mailto": self._mailto} if self._mailto else None,
                 headers={"User-Agent": self._user_agent()},
+                # Crossref answers alias DOIs with a 301 to the canonical DOI's record.
+                follow_redirects=True,
                 limiter=self._limiter,
                 sleep=self._sleep,
                 unavailable_error=CrossrefUnavailableError,
@@ -127,11 +132,31 @@ class CrossrefClient:
             raise CrossrefResponseError("Crossref returned an unexpected response") from exc
         return build_report(doi, updated_by)
 
-    async def check_many(self, dois: Iterable[str]) -> dict[str, IntegrityReport]:
-        """Check several DOIs concurrently, within Crossref's limits. Keyed by normalized DOI."""
+    async def check_many(
+        self, dois: Iterable[str], *, skip_failures: bool = True
+    ) -> dict[str, IntegrityReport]:
+        """Check several DOIs concurrently, within Crossref's limits. Keyed by normalized DOI.
+
+        By default, a DOI whose lookup fails (Crossref down, throttled past our retries,
+        or an unusable response) is logged and left out instead of failing the whole
+        batch. Callers treat a missing report as "integrity not checked". Pass
+        skip_failures=False to raise on the first failure instead.
+        """
         unique = list(dict.fromkeys(normalize_doi(d) for d in dois))
-        reports = await asyncio.gather(*(self.check(doi) for doi in unique))
-        return dict(zip(unique, reports))
+        results = await asyncio.gather(
+            *(self.check(doi) for doi in unique), return_exceptions=skip_failures
+        )
+
+        reports: dict[str, IntegrityReport] = {}
+        for doi, result in zip(unique, results):
+            if isinstance(result, CrossrefError):
+                logger.warning("Crossref check failed for %s, leaving it unchecked: %s", doi, result)
+                continue
+            if isinstance(result, BaseException):
+                # Anything other than a Crossref failure is a bug, not an outage.
+                raise result
+            reports[doi] = result
+        return reports
 
     def _user_agent(self) -> str:
         contact = f" (mailto:{self._mailto})" if self._mailto else ""

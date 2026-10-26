@@ -252,6 +252,58 @@ async def test_check_many_dedupes_and_respects_the_concurrency_limit() -> None:
     assert reports[CLEAN].retracted is False
 
 
+@pytest.mark.anyio
+async def test_follows_crossref_redirects_for_alias_dois() -> None:
+    """Crossref sends some DOIs to their canonical form, e.g. pir.25-4-115 -> pir.25.4.115."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.raw_path.decode()
+        if "pir.25-4-115" in path:
+            return httpx.Response(301, headers={"Location": "/works/10.1542/pir.25.4.115"})
+        if path.startswith("/works/10.1542/pir.25.4.115"):
+            return httpx.Response(200, content=load_fixture("crossref/work_cochrane_clean.json"))
+        return httpx.Response(404)
+
+    report = await make_client(handler).check("10.1542/pir.25-4-115")
+
+    assert report.found is True
+    assert report.retracted is False
+
+
+@pytest.mark.anyio
+async def test_check_many_can_fail_the_whole_batch_when_asked() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "31180" in request.url.raw_path.decode():
+            return httpx.Response(503)
+        return recorded_crossref(request)
+
+    with pytest.raises(CrossrefUnavailableError):
+        await make_client(handler).check_many([WAKEFIELD, SURGISPHERE, CLEAN], skip_failures=False)
+
+
+@pytest.mark.anyio
+async def test_check_many_skips_failed_lookups_by_default() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.raw_path.decode()
+        if "31180" in path:
+            return httpx.Response(503)
+        if "lungcan" in path:
+            return httpx.Response(200, content=b"not json")
+        return recorded_crossref(request)
+
+    reports = await make_client(handler).check_many([WAKEFIELD, SURGISPHERE, CONCERN_ONLY, CLEAN])
+
+    assert set(reports) == {WAKEFIELD, CLEAN}
+    assert reports[WAKEFIELD].retracted is True
+
+
+@pytest.mark.anyio
+async def test_check_many_with_crossref_down_returns_no_reports() -> None:
+    reports = await make_client(lambda _: httpx.Response(503)).check_many([WAKEFIELD, CLEAN])
+
+    assert reports == {}
+
+
 @pytest.fixture
 def api() -> Iterator[Callable[[Callable[[httpx.Request], httpx.Response]], TestClient]]:
     def build(handler: Callable[[httpx.Request], httpx.Response] = recorded_crossref) -> TestClient:

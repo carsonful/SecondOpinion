@@ -91,8 +91,25 @@ not change their final contributions. The table contains its horizontal scrollin
 | 503 | Azure normalization is unconfigured/unavailable, or PubMed/Crossref is unavailable. | Show a service error and allow retry. Rephrasing does not fix service configuration. |
 
 Errors have a JSON `detail` field. Request-validation errors use an array of
-validation details; normalization and service errors use a string. The endpoint
-does not return partial candidates when an integrity check fails.
+validation details; normalization and service errors use a string. A failed
+Crossref lookup does not fail the request: those studies are returned with the
+integrity status `unchecked` ("Integrity not checked").
+
+## Caching
+
+Repeated claims are served from an in-memory cache, so they return without
+calling Azure, PubMed, or Crossref. Results are keyed on the normalized search
+query and `limit`, so different wordings that normalize to the same query share
+results. The response field `cached` is `true` when the studies came from the
+cache.
+
+- Add `?refresh=true` to skip the cache and fetch fresh results.
+- Results with a failed Crossref lookup are not cached, so an outage doesn't
+  leave studies unchecked until the cache expires.
+- Entries expire after 6 hours (`CLAIMS_CACHE_TTL_SECONDS`, `0` turns caching
+  off) and at most 256 are kept (`CLAIMS_CACHE_MAX_ENTRIES`).
+- The cache is cleared when the server restarts and is not shared between
+  server processes. No database is needed.
 
 ## Frontend integration and hosting
 

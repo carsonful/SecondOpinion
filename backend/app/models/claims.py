@@ -50,6 +50,10 @@ class ClaimCandidates(BaseModel):
     normalized: NormalizedClaim
     query_translation: str | None
     total_results: int = Field(description="Total PubMed search matches before the limit and deduplication.")
+    cached: bool = Field(
+        default=False,
+        description="True when the studies came from the server's cache instead of new PubMed and Crossref calls.",
+    )
     # PubMed relevance order, after deduplication. Not a quality ranking.
     candidates: list[CandidateStudy] = Field(
         description="Deduplicated studies in PubMed relevance order, with extracted metadata and provisional base design weights. No verdict or confidence score is assigned.",
