@@ -84,6 +84,19 @@ def api(
     app.dependency_overrides.clear()
 
 
+def test_candidates_match_the_current_search_contract(api) -> None:
+    response = api().post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "candidates"
+    assert [candidate["article"]["pmid"] for candidate in body["candidates"]] == [
+        "38719213", "31478634", "32342851",
+    ]
+    assert all(set(candidate) == {"article", "metadata", "access"} for candidate in body["candidates"])
+    assert "verdict" not in body
+
+
 def access_reasons(response) -> dict[str, str]:
     return {c["article"]["pmid"]: c["access"]["reason"] for c in response.json()["candidates"]}
 
@@ -99,6 +112,12 @@ def test_pmc_outage_still_returns_candidates_with_access_failure(api) -> None:
         "31478634": "request_failed",
         "32342851": "request_failed",
     }
+    body = response.json()
+    assert body["coverage"] == {
+        "retrieved_studies": 3, "full_text_available": 0,
+        "abstract_only": 3, "metadata_only": 0,
+    }
+    assert all(candidate["article"]["abstract"] for candidate in body["candidates"])
 
 
 def test_one_failed_pmc_lookup_only_affects_that_study(api) -> None:
@@ -183,8 +202,9 @@ def test_different_limits_are_cached_separately(api, calls: Calls) -> None:
     assert response.json()["cached"] is False
 
 
-def test_results_with_a_failed_pmc_lookup_are_not_cached(api, calls: Calls) -> None:
-    client = api(lambda article: unavailable(article, "request_failed", "PMC unavailable"))
+@pytest.mark.parametrize("reason", ["request_failed", "parse_failed"])
+def test_results_with_a_failed_pmc_lookup_are_not_cached(api, calls: Calls, reason: str) -> None:
+    client = api(lambda article: unavailable(article, reason, "PMC unavailable"))
     client.post("/api/claims", json=ZINC)
     pubmed_calls = calls.pubmed
 

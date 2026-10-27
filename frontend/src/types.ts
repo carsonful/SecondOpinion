@@ -32,10 +32,6 @@ export interface ClaimCandidates {
       publication_types: string[]
       url: string
     }
-    integrity: {
-      status: 'retracted' | 'expression_of_concern' | 'corrected' | 'no_notice_found' | 'unchecked'
-      notices: { category: string; label: string | null; notice_url: string | null }[]
-    }
     metadata: {
       design: string
     }

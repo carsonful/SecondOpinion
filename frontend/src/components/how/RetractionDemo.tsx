@@ -48,7 +48,7 @@ export default function RetractionDemo({ onStatusChange }: DemoProps) {
 
   return (
     <div className="demo">
-      <p className="demo__caption">Sources found for a sample claim</p>
+      <p className="demo__caption">Planned screening · sample records</p>
       <ul className="retract__list">
         {SOURCES.map((s, i) => {
           const checked = cursor > i
@@ -89,7 +89,7 @@ export default function RetractionDemo({ onStatusChange }: DemoProps) {
               <strong>
                 {kept} of {SOURCES.length}
               </strong>{' '}
-              sources make it into the verdict.
+              sample sources pass this integrity screen.
             </p>
             <button type="button" className="demo__ghost" onClick={() => setCursor(-1)}>
               ↺ Reset

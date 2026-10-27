@@ -152,10 +152,18 @@ async def _retrieve(
             articles.append(article)
 
     # Retrieval errors affect coverage, not whether the PubMed record is shown.
-    texts = await asyncio.gather(*(pmc.retrieve(article, refresh=refresh) for article in articles)) if pmc else [
-        unavailable(article, "request_failed", "Full-text retrieval is not initialized; access could not be checked.")
-        for article in articles
-    ]
+    if pmc is not None:
+        texts = await asyncio.gather(*(
+            pmc.retrieve(article, refresh=refresh) for article in articles
+        ))
+    else:
+        texts = [
+            unavailable(
+                article, "request_failed",
+                "Full-text retrieval is not initialized; access could not be checked.",
+            )
+            for article in articles
+        ]
     candidates = []
     for article, text in zip(articles, texts):
         metadata = extract_metadata(article)

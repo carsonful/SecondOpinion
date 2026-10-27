@@ -5,6 +5,13 @@ import { hydrateExample } from '../data/hydrateExample'
 
 export type Status = 'idle' | 'loading' | 'error' | 'success'
 
+function requestError(status: number, isExample: boolean): string {
+  if (isExample) return 'This saved example is unavailable right now. Try again in a moment.'
+  if (status === 422) return 'Enter one clear health claim of up to 2,000 characters.'
+  if (status === 503) return 'An evidence service is unavailable. Try again shortly.'
+  return 'Something went wrong on our end. Try again in a moment.'
+}
+
 export function useClaimChecker() {
   const [claim, setClaim] = useState('')
   const [status, setStatus] = useState<Status>('idle')
@@ -39,15 +46,7 @@ export function useClaimChecker() {
       if (currentRequest !== requestId.current) return
 
       if (!res.ok) {
-        setErrorMessage(
-          example
-            ? 'This saved example is unavailable right now. Try again in a moment.'
-            : res.status === 422
-              ? 'Enter one clear health claim of up to 2,000 characters.'
-              : res.status === 503
-                ? 'An evidence service is unavailable. Try again shortly.'
-                : 'Something went wrong on our end. Try again in a moment.'
-        )
+        setErrorMessage(requestError(res.status, Boolean(example)))
         setStatus('error')
         return
       }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 
-// Rules mirror docs/evidence-grading.md (Carson's grading method, PR #52).
-// Keep the two in sync if the method changes.
+// Educational examples of study types and publication flags.
 const TYPES = [
   {
     id: 'rct',
@@ -25,13 +24,13 @@ const TYPES = [
     id: 'sr',
     tag: 'Systematic Review / Meta-Analysis',
     category: 'Research synthesis',
-    note: 'Pulls many studies together. Only as strong as its methods and the studies inside it, so it doesn’t get an automatic top grade.',
+    note: 'Pulls many studies together. The label alone does not establish the quality of its methods or included studies.',
   },
   {
     id: 'review',
     tag: 'Review',
     category: 'General review',
-    note: 'Good background, but no systematic search or appraisal behind it.',
+    note: 'Provides background; the label alone does not establish a systematic search or appraisal.',
   },
   {
     id: 'case',
@@ -43,22 +42,22 @@ const TYPES = [
     id: 'comment',
     tag: 'Editorial / Letter',
     category: 'Commentary',
-    note: 'Usually discussion, not original research. We read the abstract before assuming anything.',
+    note: 'Often discussion, but letters can report original research. The format alone does not establish a design.',
   },
   {
     id: 'unknown',
     tag: 'Missing / conflicting',
     category: 'Unclassified',
-    note: 'The design is unclear. That’s not the same as low quality, so it isn’t penalized.',
+    note: 'The available information does not establish a study design.',
   },
 ] as const
 
 interface DemoProps {
-  /** Called with true once the viewer has graded something. */
+  /** Called with true once the viewer has selected a study type. */
   onStatusChange?: (done: boolean) => void
 }
 
-export default function GradingDemo({ onStatusChange }: DemoProps) {
+export default function StudyTypeDemo({ onStatusChange }: DemoProps) {
   const [typeId, setTypeId] = useState<string>('rct')
   const [touched, setTouched] = useState(false)
 
@@ -70,9 +69,9 @@ export default function GradingDemo({ onStatusChange }: DemoProps) {
   const type = TYPES.find((t) => t.id === typeId) ?? TYPES[0]
 
   const flags: { text: string; tone: 'info' | 'warn' }[] = []
-  if (animalsOnly) flags.push({ text: 'Preclinical: animal study, shown separately', tone: 'warn' })
-  if (preprint) flags.push({ text: 'Preprint: not yet peer reviewed, shown separately', tone: 'warn' })
-  if (!animalsOnly) flags.push({ text: 'Humans: applies to people', tone: 'info' })
+  if (animalsOnly) flags.push({ text: 'Preclinical: animal-only evidence', tone: 'warn' })
+  if (preprint) flags.push({ text: 'Preprint: peer review not established', tone: 'warn' })
+  if (!animalsOnly) flags.push({ text: 'Human study in this example', tone: 'info' })
 
   return (
     <div className="demo">
@@ -113,7 +112,7 @@ export default function GradingDemo({ onStatusChange }: DemoProps) {
       </div>
 
       <div className="grade__card" key={`${typeId}-${animalsOnly}-${preprint}`} aria-live="polite">
-        <span className="demo__caption">Graded as</span>
+        <span className="demo__caption">Study type</span>
         <p className="grade__category">{animalsOnly ? 'Preclinical evidence' : type.category}</p>
         <p className="grade__note">{type.note}</p>
         <div className="grade__flags">
@@ -126,8 +125,8 @@ export default function GradingDemo({ onStatusChange }: DemoProps) {
       </div>
 
       <p className="demo__footnote">
-        Whether a study agrees with the claim never changes its grade. Grading is about how the study was
-        done, not what it found.
+        Whether a study agrees with the claim never changes its study type. The label describes how the study was
+        done; it does not measure research quality.
       </p>
     </div>
   )

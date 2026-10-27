@@ -114,4 +114,4 @@ The backend requires `AZURE_INFERENCE_ENDPOINT`,
 normalization of uncached claims. PostgreSQL is optional for claim search; saved
 verdict examples use `DATABASE_URL` separately. The local Vite server proxies
 `/api` to port 8000. A hosted
-frontend needs the backend base URL and its origin in `CORS_ORIGINS`.
+frontend needs `/api` routed to the backend and its origin in `CORS_ORIGINS`.
