@@ -1,10 +1,12 @@
 from collections.abc import Callable, Iterator
 
 import httpx2 as httpx
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.config import Settings
 from app.models.normalization import NormalizedClaim
 from app.routers.claims import get_claims_cache
 from app.routers.crossref import get_crossref_client
@@ -213,3 +215,35 @@ def test_cache_can_be_turned_off(api, calls: Calls, cache: ClaimsCache) -> None:
 
     assert response.json()["cached"] is False
     assert calls.normalize == 2
+
+
+def test_persistent_cache_is_opt_in_and_uses_a_separate_database() -> None:
+    assert ClaimsCache.from_settings(Settings(_env_file=None)).persistent is None
+
+    configured = Settings(
+        _env_file=None,
+        cache_database_url="postgresql://localhost/cache_test",
+        database_url="postgresql://localhost/examples_test",
+    )
+    assert ClaimsCache.from_settings(configured).persistent is not None
+
+    with pytest.raises(ValueError, match="separate database"):
+        ClaimsCache.from_settings(Settings(
+            _env_file=None,
+            cache_database_url="postgresql://localhost/same_db",
+            database_url="postgresql://localhost/same_db",
+        ))
+
+
+def test_cache_database_failure_falls_back_to_live_retrieval(api, calls: Calls, cache: ClaimsCache):
+    class FailingStore:
+        async def get_normalized(self, _key):
+            raise psycopg.OperationalError("cache database unavailable")
+
+    cache.persistent = FailingStore()
+    response = api().post("/api/claims", json=ZINC)
+
+    assert response.status_code == 200
+    assert response.json()["cached"] is False
+    assert calls.external > 0
+    assert cache.persistent is None

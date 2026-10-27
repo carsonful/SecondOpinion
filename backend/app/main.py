@@ -1,7 +1,9 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
 
 import httpx2 as httpx
+import psycopg
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,10 +18,19 @@ from app.services.pubmed import PubMedClient
 from app.services.pmc import PMCClient
 from app.services.upstream import UpstreamResponseError, UpstreamUnavailableError
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     initialize_examples()
+    persistent = app.state.claims_cache.persistent
+    if persistent:
+        try:
+            await persistent.initialize()
+        except psycopg.Error:
+            logger.warning("persistent claim cache unavailable at startup")
+            app.state.claims_cache.persistent = None
     # One shared client per service and process, so every request goes through the same rate limiter.
     settings = get_settings()
     async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as http_client:
