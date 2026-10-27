@@ -25,6 +25,10 @@ def parser() -> argparse.ArgumentParser:
     put.add_argument("file", type=Path)
     put.add_argument("--limit", type=int, default=20, help="Limit used for the original request")
 
+    validate = actions.add_parser("validate", help="Check a response file without using the database")
+    validate.add_argument("file", type=Path)
+    validate.add_argument("--limit", type=int, default=20)
+
     get = actions.add_parser("get", help="Print a cached result for an exact claim wording")
     get.add_argument("claim")
     get.add_argument("--limit", type=int, default=20)
@@ -48,16 +52,36 @@ def _validate_result(data: object, limit: int) -> ClaimCandidates:
         raise ValueError("the normalized search query cannot be blank")
     if len(result.candidates) > limit:
         raise ValueError("candidate count exceeds the supplied limit")
-    if any(
-        item.article.doi and item.integrity.status == "unchecked"
-        for item in result.candidates
+    if result.total_results < len(result.candidates):
+        raise ValueError("total_results cannot be smaller than the candidate count")
+    levels = [item.access.level for item in result.candidates]
+    coverage = result.coverage
+    if (
+        coverage.retrieved_studies != len(levels)
+        or coverage.full_text_available != levels.count("full_text")
+        or coverage.abstract_only != levels.count("abstract_only")
+        or coverage.metadata_only != levels.count("metadata_only")
     ):
-        raise ValueError("results with unchecked DOI-bearing studies cannot be cached")
+        raise ValueError("coverage counts do not match the candidate studies")
     return result
+
+
+def _load_result(path: Path, limit: int) -> ClaimCandidates:
+    return _validate_result(json.loads(path.read_text(encoding="utf-8")), limit)
 
 
 async def run(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.action in {"put", "validate"}:
+        try:
+            result = _load_result(args.file, args.limit)
+        except (OSError, ValueError, ValidationError) as exc:
+            print(f"Invalid result: {exc}", file=sys.stderr)
+            return 2
+        if args.action == "validate":
+            print(f"Valid result with {len(result.candidates)} candidates for limit {args.limit}.")
+            return 0
+
     settings = get_settings()
     cache = ClaimsCache.from_settings(settings)
     store = cache.persistent
@@ -67,11 +91,6 @@ async def run(argv: list[str] | None = None) -> int:
 
     await store.initialize()
     if args.action == "put":
-        try:
-            result = _validate_result(json.loads(args.file.read_text(encoding="utf-8")), args.limit)
-        except (OSError, ValueError, ValidationError) as exc:
-            print(f"Invalid result: {exc}", file=sys.stderr)
-            return 2
         await store.put_normalized(canonical_claim_key(result.claim), result.normalized)
         await store.put_candidates(result.normalized.query, args.limit, result)
         print(f"Cached claim for {settings.claims_cache_ttl_seconds:g} seconds.")

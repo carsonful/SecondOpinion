@@ -8,6 +8,7 @@ from pydantic import SecretStr
 from psycopg.types.json import Jsonb
 
 from app.models.claims import ClaimCandidates
+from app.models.full_text import EvidenceCoverage
 from app.models.normalization import NormalizedClaim
 from app.services.durable_cache import FORMAT_VERSION, PostgresClaimsCache, cache_key
 
@@ -33,6 +34,9 @@ def empty_result(claim: str = "does zinc cure colds") -> ClaimCandidates:
     return ClaimCandidates(
         claim=claim, normalized=NORMALIZED, query_translation=None,
         total_results=0, candidates=[],
+        coverage=EvidenceCoverage(
+            retrieved_studies=0, full_text_available=0, abstract_only=0, metadata_only=0,
+        ),
     )
 
 
@@ -68,6 +72,16 @@ async def test_expiry_and_prune(store):
     assert await store.get_normalized("does zinc cure colds") is None
     assert await store.stats() == {"normalized": 0, "candidates": 0}
     assert await store.prune() == 1
+
+    await store.put_normalized("does zinc cure colds", NORMALIZED)
+    async with await psycopg.AsyncConnection.connect(TEST_URL) as connection:
+        await connection.execute(
+            "UPDATE claim_cache_entries SET expires_at = now() - interval '1 second'"
+        )
+    await store.initialize()
+    async with await psycopg.AsyncConnection.connect(TEST_URL) as connection:
+        cursor = await connection.execute("SELECT count(*) FROM claim_cache_entries")
+        assert (await cursor.fetchone())[0] == 0
 
 
 async def test_format_version_and_invalid_payload_miss_safely(store):

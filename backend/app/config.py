@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # 10 requests/second and 3 at once instead of 5 requests/second, 1 at a time.
     crossref_mailto: str | None = None
 
-    # In-memory cache for POST /claims (#15). Set the TTL to 0 to turn caching off.
+    # Claim cache TTL applies to memory and optional PostgreSQL; 0 disables both.
     claims_cache_ttl_seconds: float = 6 * 60 * 60
     claims_cache_max_entries: int = 256
 

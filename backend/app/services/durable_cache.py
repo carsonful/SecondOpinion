@@ -57,6 +57,11 @@ class PostgresClaimsCache:
                 "CREATE INDEX IF NOT EXISTS claim_cache_expires_at "
                 "ON claim_cache_entries (expires_at)"
             )
+            await connection.execute(
+                "DELETE FROM claim_cache_entries "
+                "WHERE expires_at <= now() OR format_version <> %s",
+                (FORMAT_VERSION,),
+            )
 
     async def _get(self, layer: str, key_hash: str) -> dict | None:
         async with await self._connect() as connection:

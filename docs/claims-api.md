@@ -59,12 +59,59 @@ Invalid claims return 422; unavailable normalization or evidence services return
 Repeated claims are served from an in-memory cache keyed by normalized query and
 limit. Add `?refresh=true` to fetch fresh results. Entries expire after six
 hours (`CLAIMS_CACHE_TTL_SECONDS`, `0` disables caching), with at most 256
-entries (`CLAIMS_CACHE_MAX_ENTRIES`). The cache clears when the backend restarts.
+local entries (`CLAIMS_CACHE_MAX_ENTRIES`). Without further configuration, the
+cache clears when the backend restarts.
+
+To share claim results across processes and restarts, set `CACHE_DATABASE_URL`
+to a **separate PostgreSQL database**. It must have a different database name
+from `DATABASE_URL`, which is reserved for saved verdict examples. Startup
+creates only `claim_cache_entries` in the cache database. The existing claim
+endpoint, response shape, and default in-memory behavior remain the same.
+After a local miss, the backend reads the shared cache before calling Azure,
+PubMed, or PMC. A shared hit sets `cached: true` and makes no calls to those
+services. Failed PMC retrievals are not stored. If the cache database becomes
+unavailable, requests continue through the existing in-memory/live path; restart
+the backend after restoring the database to re-enable the shared cache.
+
+The PostgreSQL TTL uses `CLAIMS_CACHE_TTL_SECONDS`. Expired rows are removed at
+backend startup or with `prune`. Local copies expire within
+60 seconds when PostgreSQL is enabled so manual changes become visible. A
+refresh request skips both caches and replaces the saved result after successful
+retrieval. Set the TTL to `0` to disable both caches.
+
+### Manually add or inspect a cached claim
+
+From `backend/`, use a complete JSON response from `POST /api/claims`, or write
+one matching its schema at `/openapi.json`. The file must include the original
+`claim`, `normalized` fields, `coverage`, and the complete `candidates` array.
+The command validates the response and its coverage counts before writing.
+The `--limit` value must match the request you intend to cache (default `20`).
+
+```bash
+python -m app.cache_admin validate /path/to/claim-result.json --limit 20
+python -m app.cache_admin put /path/to/claim-result.json --limit 20
+python -m app.cache_admin get 'Does zinc help with colds?' --limit 20
+python -m app.cache_admin stats
+python -m app.cache_admin delete 'Does zinc help with colds?' --limit 20
+python -m app.cache_admin prune
+```
+
+`validate` works without a database connection, so a hand-edited file can be
+checked before loading it. The saved claim wording is matched case and
+whitespace insensitively. Another
+wording can reuse the candidate result if its normalized search query matches,
+but normalizing that new wording still needs Azure once. `get` prints a valid
+JSON response with `cached: true`; `delete` removes the matching wording and
+candidate result for the supplied limit. Running `put` again replaces that
+entry and resets its TTL. Active backend processes may serve an earlier local
+copy for up to 60 seconds. These are claim search candidates, not the curated
+verdicts returned by `GET /api/examples/{slug}`.
 
 ## Local setup
 
 The backend requires `AZURE_INFERENCE_ENDPOINT`,
 `AZURE_MODEL_DEPLOYMENT_NAME`, and `AZURE_INFERENCE_API_KEY` for claim
-normalization. PostgreSQL is not required for claim search; saved examples use
-it separately. The local Vite server proxies `/api` to port 8000. A hosted
+normalization of uncached claims. PostgreSQL is optional for claim search; saved
+verdict examples use `DATABASE_URL` separately. The local Vite server proxies
+`/api` to port 8000. A hosted
 frontend needs the backend base URL and its origin in `CORS_ORIGINS`.
