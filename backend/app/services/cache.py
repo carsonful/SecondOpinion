@@ -50,3 +50,8 @@ class TTLCache(Generic[K, V]):
 
     def __len__(self) -> int:
         return len(self._entries)
+
+
+def canonical_claim_key(claim: str) -> str:
+    """Keep the existing case- and whitespace-insensitive claim cache key."""
+    return " ".join(claim.lower().split())

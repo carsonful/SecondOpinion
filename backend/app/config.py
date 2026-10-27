@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     azure_model_deployment_name: str | None = None
     azure_inference_api_key: SecretStr | None = None
     database_url: SecretStr | None = None
+    cache_database_url: SecretStr | None = None
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
