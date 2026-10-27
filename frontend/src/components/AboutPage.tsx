@@ -63,10 +63,10 @@ function RxPad() {
               <strong>For:</strong> any health claim you’re unsure about
             </span>
             <span>
-              <strong>Directions:</strong> paste it in, read the verdict, click the sources
+              <strong>Directions:</strong> paste it in, explore studies, open the sources
             </span>
             <span>
-              <strong>Contains:</strong> graded studies, retraction checks, plain language
+              <strong>Contains:</strong> study types, abstracts, PMC access status
             </span>
             <span>
               <strong>Refills:</strong> unlimited
@@ -86,8 +86,8 @@ function RxPad() {
 /** Brushed-foil blister strip holding the three verdict pills. */
 function BlisterStrip() {
   return (
-    <div className="blister" aria-label="The three possible verdicts">
-      <span className="blister__title">THREE VERDICTS · ONE PER CLAIM</span>
+    <div className="blister" aria-label="Planned verdict categories">
+      <span className="blister__title">PLANNED VERDICT CATEGORIES</span>
       <div className="blister__row">
         {VERDICTS.map((v) => (
           <div key={v.label} className="blister__cell">
@@ -136,9 +136,9 @@ export default function AboutPage() {
             <div className="about__project-copy">
               <h2 id="project-title">The project</h2>
               <p>
-                Paste any health claim and get a clear verdict, explained in plain language, with every source
-                linked. We grade the studies behind the claim, check for retractions, and tell you when the
-                evidence isn’t there.
+                Search a health claim to explore related PubMed studies, their research designs, abstracts,
+                and PMC access status. Three saved examples illustrate curated verdicts. Evidence appraisal,
+                automatic integrity screening, and live verdicts are planned for a future release.
               </p>
               <a className="about__repo" href={REPO_URL} target="_blank" rel="noreferrer">
                 <GitHubIcon />

@@ -1,187 +1,136 @@
 # SecondOpinion
-Busting health myths backed by science.
 
-## Project structure
+Find research behind health claims.
 
-- `frontend/` — React + TypeScript (Vite)
-- `backend/` — Python API (FastAPI)
+The app normalizes a health claim, searches PubMed, and displays related studies
+with study-type labels, abstracts, and PMC full-text access status. Live search
+does not assign evidence grades, confidence scores, or verdicts.
 
-## Getting started
+Three saved examples show curated verdicts. They load from PostgreSQL without
+calling Azure or PubMed.
+
+## Local setup
 
 ### Backend
 
 Requires Python 3.11+.
 
-```
+```sh
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
 
-Runs on http://localhost:8000. Health check at `/api/health`. API docs at `/docs`.
+The API runs at http://localhost:8000. Interactive API docs are at `/docs`,
+the schema is at `/openapi.json`, and the health check is at `/api/health`.
 
-Credentials and optional settings go in `backend/.env` (see `backend/.env.example`).
+Copy `backend/.env.example` to `backend/.env` and configure the services you use:
 
-Azure model inference uses these settings:
+| Setting | Purpose |
+| --- | --- |
+| `AZURE_INFERENCE_ENDPOINT` | Resource base URL or `/openai/v1` URL for claim normalization. Project URLs ending in `/api/projects/...` are unsupported. |
+| `AZURE_MODEL_DEPLOYMENT_NAME` | Exact Azure deployment name; it can differ from the model name. |
+| `AZURE_INFERENCE_API_KEY` | Key for the resource serving that deployment. |
+| `DATABASE_URL` | PostgreSQL connection string for saved examples. Startup creates and seeds `example_results` when configured. |
+| `CACHE_DATABASE_URL` | Optional separate PostgreSQL database for claim results shared across processes and restarts. Must use a different database name from `DATABASE_URL`. |
+| `NCBI_API_KEY` | Optional; raises the shared NCBI rate limit from 3 to 10 requests per second. |
+| `NCBI_EMAIL` | Contact email for NCBI requests. |
+| `CROSSREF_MAILTO` | Optional contact email for Crossref's polite pool. |
+| `CORS_ORIGINS` | Allowed frontend origins as a JSON array; defaults to `["http://localhost:5173"]`. |
 
-- `AZURE_INFERENCE_ENDPOINT`: the resource base URL or its `/openai/v1` URL. A project URL ending in `/api/projects/...` is not supported.
-- `AZURE_MODEL_DEPLOYMENT_NAME`: the exact deployment name assigned in Azure, which may differ from the underlying model name.
-- `AZURE_INFERENCE_API_KEY`: the API key for the resource serving that deployment.
-
-These replace `AZURE_FOUNDRY_ENDPOINT`, `AZURE_FOUNDRY_DEPLOYMENT`, and
-`AZURE_FOUNDRY_API_KEY`, respectively. Update existing environment variables to
-the new names and restart the backend after changing them.
-
-Saved demo results require PostgreSQL. Set `DATABASE_URL` in `backend/.env` to a
-PostgreSQL connection string. Backend startup creates the `example_results` table
-and inserts the three examples automatically. The saved verdicts and confidence
-scores are curated demo content. They do not come from the unfinished live
-claim search. Loading an example does not call Azure Foundry or PubMed.
-
-To run the tests:
-
-```
-cd backend
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pytest
-```
-
-Backend layout:
-
-```
-backend/app/
-  main.py       # app factory, middleware, router registration
-  config.py     # settings loaded from env / .env
-  routers/      # HTTP endpoints (thin, delegate to services)
-  models/       # pydantic schemas
-  services/     # source API clients, normalization and study metadata
-backend/tests/  # pytest suite
-```
-
-Endpoints (full schemas at `/docs`):
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/health` | Status and API version |
-| POST | `/api/claims` | Normalize a health claim and retrieve deduplicated PubMed studies with PMC access status |
-| POST | `/api/claims/normalize` | Normalize one health claim into structured retrieval fields without searching |
-| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
-| GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
-| GET | `/api/crossref/notices?doi=...` | Retractions, corrections, and expressions of concern for a paper, each with a link to the notice |
-| GET | `/api/examples/{slug}` | PostgreSQL result for `raw-milk`, `cold-showers`, or `cracking-knuckles` |
-
-PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Crossref calls work the same way (set `CROSSREF_MAILTO` for the faster "polite" pool).
-
-Crossref notices come from both publishers and the Retraction Watch database. A report's `retracted` flag is `None` when Crossref has no record of the DOI (unchecked) and `False` when it was checked and no notice was found, which is not the same as verified trustworthy. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
-
-`POST /api/claims` accepts `{"claim":"Does zinc cure colds?","limit":20}`.
-The frontend handoff contract and hosting requirements are in
-[`docs/claims-api.md`](docs/claims-api.md). Repeated claims use the existing
-in-memory cache (add `?refresh=true` to skip it). Set `CACHE_DATABASE_URL` to
-an optional, separate PostgreSQL database to share cached claim results across
-processes and restarts. From `backend/`, run
-`python -m app.cache_admin put /path/to/claim-result.json --limit 20` to add a complete result manually. See
-the caching section of the API guide for the other commands and behavior.
-The claim must contain 1–2,000 characters; the optional limit is 1–100.
-Azure Foundry credentials are required for normalization of uncached claims.
-PostgreSQL is optional for this retrieval endpoint. The response has `status: "candidates"`,
-the submitted `claim`, `normalized` retrieval fields, `query_translation`,
-PubMed's `total_results` (before deduplication), and `candidates`. Each candidate
-contains `article`, study-type `metadata`, and `access` with PMC full-text availability. `coverage` reports retrieved full-text,
-abstract-only, and citation-only counts. Candidates remain
-in PubMed relevance order. These are search candidates with study-type
-labels, not grades or verdicts.
-
-An empty search returns 200 with an empty candidates list. Invalid/non-health
-input returns 422; unavailable normalization or evidence services return 503;
-unusable PubMed responses return 502. Full request and
-response schemas are available at `/docs`.
-
-The app labels study types from PubMed metadata and shows a letter and color
-beside each type. These are design labels, not quality grades. See
-[`docs/study-guide.md`](docs/study-guide.md) for the compact study-type key.
-
-Evidence grading is planned for a future release. The first release focuses on
-study-type labels, abstracts, and PMC full-text availability; it does not assign
-study grades or weights. The proposed grading rules and weights are documented
-in [`docs/evidence-grading.md`](docs/evidence-grading.md).
-
-PMC retrieval uses NCBI's supported BioC service and a shared NCBI rate limit;
-no publisher access, PDFs, or subscription sessions are used. Results show
-whether PMC full text was retrieved, or only an abstract or citation is
-available. Abstracts remain visible for records without retrieved full text.
-See the API contract for retrieval limits and caching behavior.
+Uncached claim normalization requires the three Azure settings. PostgreSQL is
+optional for claim search.
+Restart the backend after changing settings. See `.env.example` for cache options.
 
 ### Frontend
 
-```
+```sh
 cd frontend
 npm install
 npm run dev
 ```
 
-Runs on http://localhost:5173 and proxies `/api` requests to the backend.
+The frontend runs at http://localhost:5173. Vite proxies `/api` to port 8000.
+For hosting, route `/api` to the backend and add the frontend origin to
+`CORS_ORIGINS`.
 
-**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework). Design tokens live in `src/styles/theme.css`. Fonts are Comfortaa (body/UI, weights 500–700) and Homemade Apple (the "doctor's handwriting": the "Second" in the logo, "Mythbusters" on About, and handwritten notes), loaded via Google Fonts in `index.html`.
+### Checks
 
-**Design system:**
-- **Light and dark mode.** A sun/moon capsule toggle in the nav bar switches themes. The choice is saved in `localStorage` (`useTheme.ts`); dark is the default.
-- **Gradients.** Both themes use the Figma gradient's angle and stops (114deg, 0 / 19 / 43 / 69 / 88 / 100%). Light mode runs sky blue to cream; dark mode ("ink & cream") is near-black navy with the Figma blue (#125FC9) as soft corner glows. The gradient is pinned to the viewport.
-- **Liquid glass.** `.glass-card`, `.glass-pill` and `.glass-panel` read semantic tokens (`--card-bg`, `--text-strong`, …) defined per theme in `theme.css`, so components never hard-code theme colours.
-- **Dark top, light bottom.** In dark mode, the Search and About pages keep their lower half light (the result area and the team). Those sections set their own light tokens in their CSS, so they stay readable in dark mode no matter what.
-- **Props.** The paper Rx pad, the lab-report clipboards, the foil blister strips and the ink stamps look the same in both themes.
+From `backend/`, with the virtual environment activated:
 
-**Pages:**
-
-| Screen | Component | Notes |
-|---|---|---|
-| Search + result (home) | `SearchScreen.tsx`, `result/` | Search claims and review related PubMed studies, study types, abstracts, and PMC access status. |
-| How it works | `HowItWorksPage.tsx`, `how/` | A capsule travels down a glass tube past a claim normalization demo. |
-| About | `AboutPage.tsx` | Hero with a paper Rx pad, project capsule with the verdicts in a foil blister strip and a GitHub link, team as glass capsules with photos and roles, advisor capsule. Team info lives in `src/data/team.ts`; photos in `src/assets/team/` (`carson.jpg`, `nj.jpg`, …) are picked up automatically, with initials as a fallback. |
-
-Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
-
-**Backend integration status:** The three example claims fetch saved results through
-`GET /api/examples/{slug}`. JSON explanation segments become React text and links
-in the existing result display. Other claims use `POST /api/claims` and show
-candidate studies, abstracts, study-type labels, and full-text access status in
-a results view. Sorting supports relevance or study type. There are no evidence
-grades or overall verdicts in the current search view.
-Typing one of the
-three exact example claims still retrieves its saved result.
-
-Frontend layout:
-
-```
-frontend/src/
-  assets/
-    team/                team photos for the About page
-  components/
-    NavBar.tsx            logo, page links, theme toggle
-    SearchScreen.tsx      search + result page (dark top, light bottom)
-    result/
-      VerdictResult.tsx   verdict capsule, explanation, related claims
-      ScoreTip.tsx        the "?" tooltip next to the confidence score
-      ReferralTabs.tsx    further reading: tabbed referral sheets
-    HowItWorksPage.tsx    capsule tube + stations
-    how/
-      Clipboard.tsx       lab-report clipboard with an ink stamp
-      NormalizeDemo.tsx   interactive demo: claim normalization
-      RetractionDemo.tsx  interactive demo: retraction checks
-    AboutPage.tsx         project, team and advisor
-  data/
-    exampleClaims.ts      labels and slugs for saved examples
-    hydrateExample.tsx    renders JSON explanation segments as React content
-    team.ts               names, roles and blurbs for the About page
-  hooks/
-    useClaimChecker.ts    shared state + fetch logic for checking a claim
-    useTheme.ts           light/dark mode, remembered per browser
-  styles/
-    theme.css            design tokens, gradient, glass utility classes
-  types.ts               shared TypeScript types
-  App.tsx                page routing (state-based) + top-level layout
+```sh
+pytest
 ```
 
-**Known gaps:** independent metadata and findings validation (#14), sample size and recency rules (#18), complete methodological appraisal and synthesis eligibility, verdict generation (#20), claim-level explanation generation (#22), final effective scores in the evidence table (#26), expand How It Works content, About page content, accessibility pass (#28), usability testing (#27). The claim retrieval endpoint is implemented locally; deployment remains part of #16's acceptance criteria.
+From `frontend/`:
+
+```sh
+npm run build
+```
+
+Backend tests use recorded or mocked service responses. The PostgreSQL
+integration tests require `TEST_DATABASE_URL` (examples) or
+`TEST_CACHE_DATABASE_URL` (claim cache).
+
+## API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | Status and API version. |
+| POST | `/api/claims` | Normalize a claim and retrieve deduplicated PubMed studies with PMC access status. |
+| POST | `/api/claims/normalize` | Normalize a claim without searching. |
+| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed in relevance order. |
+| GET | `/api/pubmed/articles/{pmid}` | Retrieve one PubMed record. |
+| GET | `/api/crossref/notices?doi=...` | Look up retractions, corrections, and expressions of concern separately from claim search. |
+| GET | `/api/examples/{slug}` | Load `raw-milk`, `cold-showers`, or `cracking-knuckles`. |
+
+For claim request/response fields, errors, retrieval limits, and caching, see
+[the claim search contract](docs/claims-api.md). Repeated claims use an in-memory
+cache; `?refresh=true` requests fresh results. Set `CACHE_DATABASE_URL` to enable
+the optional shared PostgreSQL cache. From `backend/`, use
+`python -m app.cache_admin put /path/to/claim-result.json --limit 20` to load a
+complete result manually. The API guide covers validation, cache commands, TTLs,
+and fallback behavior when the cache database is unavailable.
+
+Crossref distinguishes an unchecked DOI (`retracted: null`) from a checked DOI
+with no retraction found (`retracted: false`). Neither establishes study quality.
+
+## Code map
+
+The backend uses FastAPI and Pydantic:
+
+- `backend/app/main.py`: app setup, shared service clients, and middleware.
+- `backend/app/routers/`: HTTP endpoints.
+- `backend/app/models/`: request and response schemas.
+- `backend/app/services/`: normalization, source clients, metadata, and caching.
+- `backend/app/data/example_results.json`: curated saved examples.
+- `backend/tests/`: public test suite and recorded responses.
+
+The frontend uses React 18, TypeScript, Vite, and plain CSS:
+
+- `frontend/src/App.tsx`: page selection using React state.
+- `frontend/src/components/SearchScreen.tsx` and `result/`: search and results.
+- `frontend/src/hooks/useClaimChecker.ts`: claim requests and request state.
+- `frontend/src/data/exampleClaims.ts` and `hydrateExample.tsx`: saved example links and rendering.
+- `frontend/src/components/HowItWorksPage.tsx` and `how/`: educational demos, including a planned integrity-screening preview.
+- `frontend/src/components/AboutPage.tsx` and `data/team.ts`: project and team content. Optional photos in `src/assets/team/` replace initials automatically.
+- `frontend/src/styles/theme.css`: theme tokens and shared glass styles. `useTheme.ts` saves the selected theme; dark is the default.
+
+Fonts load from Google Fonts in `frontend/index.html`. Search results and the
+team section use light backgrounds in both themes.
+
+## Current limits and future work
+
+Study-type letters and colors identify research designs; they are not quality
+grades. See [the study-type key](docs/study-guide.md).
+
+Evidence appraisal, findings synthesis, automatic integrity screening in claim
+search, and live verdict generation remain future work. Internal scoring and
+integrity prototypes are retained in `evidence_workflow.py`, `evidence_models.py`,
+`services/weighting.py`, and `services/integrity.py`; the claims endpoint does not
+call them. Their proposed rules are in [the future grading plan](docs/evidence-grading.md).
+
+Metadata extraction still needs independent validation. Other open work includes
+deployment, accessibility review, and usability testing.
