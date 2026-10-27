@@ -74,6 +74,11 @@ class PubMedClient:
             tool=settings.ncbi_tool,
         )
 
+    @property
+    def rate_limiter(self) -> RateLimiter:
+        """Share the NCBI request budget with PMC retrieval in this process."""
+        return self._limiter
+
     async def search(self, query: str, limit: int = 20) -> PubMedSearchResponse:
         """Search PubMed and return full records for the top matches, in relevance order."""
         pmids, total, translation = await self.search_ids(query, limit)

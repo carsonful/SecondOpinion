@@ -1,10 +1,27 @@
 import { ReactNode } from 'react'
 
+export interface FullTextAccess {
+  level: 'full_text' | 'abstract_only' | 'metadata_only'
+  reason: string
+  detail: string
+  pmc_id: string | null
+  source_url: string | null
+  license: string | null
+  sections: string[]
+}
+
 export interface ClaimCandidates {
   status: 'candidates'
   claim: string
   normalized: { query: string }
   total_results: number
+  cached: boolean
+  coverage: {
+    retrieved_studies: number
+    full_text_available: number
+    abstract_only: number
+    metadata_only: number
+  }
   candidates: {
     article: {
       pmid: string
@@ -21,20 +38,8 @@ export interface ClaimCandidates {
     }
     metadata: {
       design: string
-      design_reason: string
-      design_evidence: string | null
-      sample_size: number | null
-      sample_size_evidence: string | null
-      sample_size_reason: string
-      animal_only: boolean
     }
-    weight: {
-      base_weight: number | null
-      final_weight: number | null
-      version: string
-      reason: string
-      eligibility_reason: string
-    }
+    access: FullTextAccess
   }[]
 }
 
@@ -42,7 +47,7 @@ export interface ClaimCandidates {
 export interface Source {
   title: string
   publisher: string // e.g. "Journal of Food Protection · 2011"
-  category: string // evidence category, see docs/evidence-grading.md
+  category: string // source category
   takeaway: string // one sentence: what this source says about the claim
   url: string
   site: string // short label for the link button, e.g. "PubMed"

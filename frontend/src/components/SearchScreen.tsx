@@ -14,8 +14,8 @@ const CAP_COLORS = [
 
 const CHECKS = [
   { title: 'Claim normalization', text: 'Understands what you’re actually asking', cap: '#2a6cb8' },
-  { title: 'Evidence grading', text: 'Every study graded by how it was done', cap: '#D6B482' },
-  { title: 'Retraction checks', text: 'Pulled papers never make it in', cap: '#0B1957' },
+  { title: 'Study types', text: 'Learn what each design can tell you', cap: '#D6B482' },
+  { title: 'PMC full text', text: 'See whether the full text is available', cap: '#0B1957' },
 ]
 
 interface SearchScreenProps {
@@ -23,7 +23,7 @@ interface SearchScreenProps {
   setClaim: (value: string) => void
   status: Status
   errorMessage: string
-  checkClaim: (text: string) => void
+  checkClaim: (text: string, refresh?: boolean) => void
   verdict: VerdictData | null
   candidates: ClaimCandidates | null
   activeClaim: string
@@ -78,8 +78,7 @@ export default function SearchScreen({
             actually true?
           </h1>
           <p className="search__subhead">
-            Paste any health claim and get a science-backed verdict, graded evidence, and sources you can
-            trust.
+            Search a health claim to explore related studies, learn their designs, and open the available sources.
           </p>
 
           <form className="search__capsule" onSubmit={handleSubmit} role="search">
@@ -144,7 +143,7 @@ export default function SearchScreen({
           {showResult && verdict && (
             <VerdictResult key={activeClaim} verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
           )}
-          {showResult && candidates && <CandidateResults result={candidates} />}
+          {showResult && candidates && <CandidateResults result={candidates} onRefresh={() => checkClaim(activeClaim, true)} />}
 
           {status === 'idle' && (
             <div className="checks">

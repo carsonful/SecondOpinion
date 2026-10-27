@@ -1,14 +1,13 @@
-"""Candidate retrieval contract; assessment and verdicts are separate work."""
+"""Claim search response and candidate study metadata."""
 
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.crossref import IntegrityNotice
 from app.models.normalization import NormalizedClaim
-from app.models.metadata import CandidateWeight, StudyMetadata
+from app.models.metadata import StudyMetadata
+from app.models.full_text import EvidenceCoverage, FullTextAccess
 from app.models.pubmed import PubMedArticle
-from app.services.integrity import IntegrityStatus
 
 
 class ClaimRequest(BaseModel):
@@ -32,16 +31,10 @@ class ClaimRequest(BaseModel):
         return value.strip()
 
 
-class CandidateIntegrity(BaseModel):
-    status: IntegrityStatus
-    notices: list[IntegrityNotice]
-
-
 class CandidateStudy(BaseModel):
     article: PubMedArticle
-    integrity: CandidateIntegrity
     metadata: StudyMetadata
-    weight: CandidateWeight
+    access: FullTextAccess
 
 
 class ClaimCandidates(BaseModel):
@@ -52,9 +45,10 @@ class ClaimCandidates(BaseModel):
     total_results: int = Field(description="Total PubMed search matches before the limit and deduplication.")
     cached: bool = Field(
         default=False,
-        description="True when the studies came from the server's cache instead of new PubMed and Crossref calls.",
+        description="True when the studies came from the server's cache instead of new PubMed and PMC calls.",
     )
+    coverage: EvidenceCoverage
     # PubMed relevance order, after deduplication. Not a quality ranking.
     candidates: list[CandidateStudy] = Field(
-        description="Deduplicated studies in PubMed relevance order, with extracted metadata and provisional base design weights. No verdict or confidence score is assigned.",
+        description="Deduplicated studies in PubMed relevance order, with study-design metadata and full-text access details. No grades, scores, or verdicts are assigned.",
     )

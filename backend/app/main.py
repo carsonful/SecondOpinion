@@ -13,6 +13,7 @@ from app.services.claims import ClaimsCache
 from app.services.crossref import CrossrefClient
 from app.services.examples import initialize_examples
 from app.services.pubmed import PubMedClient
+from app.services.pmc import PMCClient
 from app.services.upstream import UpstreamResponseError, UpstreamUnavailableError
 
 
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as http_client:
         app.state.pubmed_client = PubMedClient.from_settings(settings, http_client)
+        app.state.pmc_client = PMCClient(http_client, app.state.pubmed_client.rate_limiter)
         app.state.crossref_client = CrossrefClient.from_settings(settings, http_client)
         yield
 

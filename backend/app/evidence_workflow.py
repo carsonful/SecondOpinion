@@ -1,9 +1,7 @@
-"""Small functions to fill in independently as the team builds the workflow.
+"""Legacy, unconnected workflow prototype.
 
-Normalization calls Azure Foundry; base design weighting uses versioned rules.
-Claim assessment, effective contributions, and verdicts remain unimplemented.
-Verdicts only accept evidence that passed the integrity gate in services/integrity.py.
-See docs/evidence-grading.md for the provisional grading rules.
+The active claims API does not call this module or expose its experimental
+numeric scoring. The current product shows study designs as educational labels.
 """
 
 from collections.abc import Sequence

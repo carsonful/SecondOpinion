@@ -1,23 +1,23 @@
-"""Conservative metadata extraction and provisional weighting contract."""
+"""Conservative extraction of study design and participant metadata."""
+
+from enum import StrEnum
 
 from pydantic import BaseModel
 
-from app.services.weighting import StudyDesign
+
+class StudyDesign(StrEnum):
+    RANDOMIZED_TRIAL = "randomized_controlled_trial"
+    INTERVENTION = "intervention_randomization_unknown"
+    COHORT = "cohort"
+    CASE_CONTROL = "case_control"
+    CROSS_SECTIONAL = "cross_sectional"
+    OBSERVATIONAL = "observational_subtype_unknown"
+    DESCRIPTIVE = "case_report_or_series"
+    GENERAL_REVIEW = "general_review"
+    COMMENTARY = "commentary"
+    SYNTHESIS = "research_synthesis"
+    UNKNOWN = "unknown"
 
 
 class StudyMetadata(BaseModel):
     design: StudyDesign
-    design_reason: str
-    design_evidence: str | None
-    sample_size: int | None
-    sample_size_evidence: str | None
-    sample_size_reason: str
-    animal_only: bool
-
-
-class CandidateWeight(BaseModel):
-    base_weight: float | None
-    final_weight: float | None
-    version: str
-    reason: str
-    eligibility_reason: str

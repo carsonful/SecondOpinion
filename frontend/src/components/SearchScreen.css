@@ -900,21 +900,30 @@
   margin-top: 20px;
   border-radius: 16px;
 }
-.candidates__table { width: 100%; min-width: 940px; border-collapse: collapse; text-align: left; line-height: 1.7; }
+.candidates__table { width: 100%; min-width: 620px; border-collapse: collapse; text-align: left; line-height: 1.7; }
 .candidates__table caption { text-align: left; padding: 16px; }
 .candidates__table th, .candidates__table td { padding: 16px; vertical-align: top; border-bottom: 1px solid var(--text-muted); }
 .candidates__table td:first-child { min-width: 300px; max-width: 500px; }
-.candidates__table th:nth-child(2), .candidates__table td:nth-child(2),
-.candidates__table th:nth-child(4), .candidates__table td:nth-child(4),
-.candidates__table th:nth-child(5), .candidates__table td:nth-child(5) { white-space: nowrap; }
-.candidates__table td:nth-child(3) { min-width: 160px; }
-.candidates__table td:nth-child(6) { min-width: 220px; }
+.candidates__table th:nth-child(2), .candidates__table td:nth-child(2) { min-width: 150px; }
+.candidates__table td:nth-child(3) { min-width: 190px; }
+.study-type { display: inline-block; padding: 3px 9px; border: 1px solid currentColor; border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 1.5; }
+.study-type--synthesis { color: #6c58a6; background: #f0ecfa; }
+.study-type--randomized { color: #2e71ac; background: #e9f3fb; }
+.study-type--observational { color: #247769; background: #e7f5f1; }
+.study-type--descriptive { color: #99611e; background: #fbf1e1; }
+.study-type--context { color: #755d79; background: #f5edf6; }
+.study-type--unknown { color: #65758b; background: #eef1f5; }
 .candidates__table h3 { margin: 0; font-size: 1rem; }
 .candidates__table a { color: var(--accent-text); }
 .candidates__table summary { cursor: pointer; }
 .candidates__table details { margin-top: 16px; }
-.candidates__table blockquote { margin: 12px 0; padding-left: 12px; border-left: 3px solid var(--text-muted); }
-.candidates__table td, .candidates__table blockquote {
+.candidates__refresh { margin: 8px 0; padding: 10px 16px; border: 1px solid var(--accent-text); border-radius: 12px; color: var(--accent-text); background: var(--card-bg); font: inherit; cursor: pointer; }
+.candidates__refresh:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; }
+.candidates__abstract-card h4 { margin: 0 0 8px; font-size: 1rem; }
+.candidates__abstract-card { margin: 14px 0; padding: 12px; border-radius: 10px; background: var(--card-bg); }
+.candidates__abstract-summary p { margin: 8px 0; line-height: 1.6; }
+.candidates > section { margin-top: 32px; }
+.candidates__table td {
   overflow-wrap: anywhere;
 }
 .candidates__scroll:focus-visible, .candidates__sort select:focus-visible, .candidates__table summary:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; }
