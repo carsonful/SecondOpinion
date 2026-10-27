@@ -1,10 +1,14 @@
-# Simple evidence grading
+# Future evidence-grading plan
 
-For the first version, use API metadata to assign an **evidence category** and
-**status flags** automatically. Use the abstract to summarize the finding and
-its relevance to the claim. Assign the provisional base weights below when the
-design is known; otherwise leave the weight unknown. No human review is required
-for this preliminary categorization.
+This document records the proposed evidence-grading workflow for a future
+release. The first release focuses on study-type labels, abstracts, and PMC
+full-text availability; it does not assign study grades or weights. The rules
+below describe planned behavior and are not the active claim-search response.
+
+The future workflow would use API metadata to assign an **evidence category**
+and **status flags** automatically, use the abstract to summarize the finding
+and its relevance to the claim, and assign the provisional base weights below
+when the design is known. Unknown designs would retain an unknown weight.
 
 ## Metadata: what helps or hurts?
 
@@ -156,13 +160,12 @@ claims. A subsequent integrity gate retains base-weight provenance and sets a
 blocked study's final contribution to zero. Passing the integrity gate alone
 does not establish a final contribution.
 
-These weights are available in the internal workflow and candidate retrieval
-endpoint. The endpoint resolves metadata with `app/services/metadata.py` and
-returns `metadata` and `weight` for each study. The frontend displays base
-weights, participant counts, reasons, source passages, rule versions, and
-integrity notices in a sortable, expandable evidence table (#26). Final
-contributions remain unknown pending claim assessment, except that the integrity
-gate sets blocked contributions to zero.
+The base-weight lookup exists in the internal workflow. The current candidate
+retrieval endpoint returns study-type metadata and PMC access status; it does not
+return grades or weights. A future grading release may add weight, participant,
+eligibility, and finding details to the API and display them in a sortable
+evidence table (#26). Final contributions remain a planned step after claim
+assessment, with the proposed integrity rules above applied to blocked studies.
 
 ### Extraction limits and validation (issue #14)
 

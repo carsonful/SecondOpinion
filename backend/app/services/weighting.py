@@ -5,26 +5,12 @@ effective contribution. Callers must resolve a design first (#14).
 """
 
 from dataclasses import dataclass
-from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-
-class StudyDesign(StrEnum):
-    RANDOMIZED_TRIAL = "randomized_controlled_trial"
-    INTERVENTION = "intervention_randomization_unknown"
-    COHORT = "cohort"
-    CASE_CONTROL = "case_control"
-    CROSS_SECTIONAL = "cross_sectional"
-    OBSERVATIONAL = "observational_subtype_unknown"
-    DESCRIPTIVE = "case_report_or_series"
-    GENERAL_REVIEW = "general_review"
-    COMMENTARY = "commentary"
-    SYNTHESIS = "research_synthesis"
-    UNKNOWN = "unknown"
+from app.models.metadata import StudyDesign
 
 
 class WeightRule(BaseModel):

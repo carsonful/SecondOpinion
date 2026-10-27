@@ -1,14 +1,12 @@
-"""Integrity gate between retrieved studies and verdict computation (#19).
+"""Integrity screen for notices attached to retrieved studies (#19).
 
-Rules come from docs/evidence-grading.md ("Eligibility and status rules"):
-
-- Retracted (per Crossref or PubMed): excluded. Effective weight is 0.
-- Unresolved expression of concern: withheld. Effective weight is 0.
-- Correction / erratum: no fixed deduction. Included at its base weight, flagged.
+- Retracted (per Crossref or PubMed): excluded from a future synthesis.
+- Unresolved expression of concern: withheld from a future synthesis.
+- Correction / erratum: flagged for review; no automatic quality judgment.
 - No notice found, or not checked: included. "No notice found" is not a
   guarantee, and "not checked" is shown as such.
 
-Retraction is a disqualification, not a score adjustment. There is deliberately
+Retraction is a notice status, not a score adjustment. There is deliberately
 no setting to turn this off: verdict code only accepts AdmittedEvidence, and
 AdmittedEvidence can only be created here, for studies that passed the gate.
 Excluded and withheld studies are still returned so the evidence table can show
@@ -146,9 +144,8 @@ def apply_integrity_gate(
 ) -> GateResult:
     """Split scored studies into those allowed into the verdict and those that are not.
 
-    Excluded and withheld studies keep their recorded design weight in
-    component_scores, but their final_weight is set to 0 with the reason recorded,
-    as the grading doc requires.
+    The scored workflow retains exclusion reasons and separates blocked records
+    from admitted records.
     """
     result = GateResult()
     for score, integrity in scored:

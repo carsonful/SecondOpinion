@@ -14,7 +14,7 @@ export function useClaimChecker() {
   const [candidates, setCandidates] = useState<ClaimCandidates | null>(null)
   const requestId = useRef(0)
 
-  async function checkClaim(text: string) {
+  async function checkClaim(text: string, refresh = false) {
     const trimmed = text.trim()
     if (!trimmed) return
 
@@ -30,7 +30,7 @@ export function useClaimChecker() {
     try {
       const res = example
         ? await fetch(`/api/examples/${example.slug}`)
-        : await fetch('/api/claims', {
+        : await fetch(`/api/claims${refresh ? '?refresh=true' : ''}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ claim: trimmed }),
