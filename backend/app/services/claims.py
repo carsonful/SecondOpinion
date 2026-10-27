@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import logging
 
 import psycopg
+from psycopg.conninfo import conninfo_to_dict
 
 from starlette.concurrency import run_in_threadpool
 
@@ -39,15 +40,19 @@ class ClaimsCache:
     def from_settings(cls, settings: Settings) -> "ClaimsCache":
         ttl, size = settings.claims_cache_ttl_seconds, settings.claims_cache_max_entries
         database_url = settings.cache_database_url
-        if database_url and settings.database_url and (
-            database_url.get_secret_value() == settings.database_url.get_secret_value()
-        ):
-            raise ValueError("CACHE_DATABASE_URL must use a separate database")
+        if database_url and settings.database_url:
+            cache_db = conninfo_to_dict(database_url.get_secret_value()).get("dbname")
+            examples_db = conninfo_to_dict(settings.database_url.get_secret_value()).get("dbname")
+            if cache_db == examples_db:
+                raise ValueError("CACHE_DATABASE_URL must use a separate database name")
         persistent = (
             PostgresClaimsCache(database_url, ttl)
             if database_url and ttl > 0 and size > 0 else None
         )
-        return cls(TTLCache(ttl, size), TTLCache(ttl, size), persistent)
+        # A short local lifetime lets manual edits in PostgreSQL become visible
+        # without waiting for the full shared-cache TTL.
+        local_ttl = min(ttl, 60) if persistent else ttl
+        return cls(TTLCache(local_ttl, size), TTLCache(local_ttl, size), persistent)
 
     def clear(self) -> None:
         self.normalized.clear()
