@@ -1,7 +1,11 @@
 """Connect claim normalization, PubMed search and PMC access checks."""
 
-from dataclasses import dataclass
 import asyncio
+from dataclasses import dataclass
+import logging
+
+import psycopg
+from psycopg.conninfo import conninfo_to_dict
 
 from starlette.concurrency import run_in_threadpool
 
@@ -9,11 +13,14 @@ from app.models.claims import CandidateStudy, ClaimCandidates
 from app.models.full_text import EvidenceCoverage
 from app.models.normalization import NormalizedClaim
 from app.config import Settings
-from app.services.cache import TTLCache
+from app.services.cache import TTLCache, canonical_claim_key
+from app.services.durable_cache import PostgresClaimsCache
 from app.services.metadata import extract_metadata
 from app.services.normalization import normalize_claim
 from app.services.pubmed import PubMedClient
 from app.services.pmc import PMCClient, unavailable
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -27,19 +34,71 @@ class ClaimsCache:
 
     normalized: TTLCache[str, NormalizedClaim]
     results: TTLCache[tuple[str, int], ClaimCandidates]
+    persistent: PostgresClaimsCache | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "ClaimsCache":
         ttl, size = settings.claims_cache_ttl_seconds, settings.claims_cache_max_entries
-        return cls(TTLCache(ttl, size), TTLCache(ttl, size))
+        database_url = settings.cache_database_url
+        if database_url and settings.database_url:
+            cache_db = conninfo_to_dict(database_url.get_secret_value()).get("dbname")
+            examples_db = conninfo_to_dict(settings.database_url.get_secret_value()).get("dbname")
+            if cache_db == examples_db:
+                raise ValueError("CACHE_DATABASE_URL must use a separate database name")
+        persistent = (
+            PostgresClaimsCache(database_url, ttl)
+            if database_url and ttl > 0 and size > 0 else None
+        )
+        # A short local lifetime lets manual edits in PostgreSQL become visible
+        # without waiting for the full shared-cache TTL.
+        local_ttl = min(ttl, 60) if persistent else ttl
+        return cls(TTLCache(local_ttl, size), TTLCache(local_ttl, size), persistent)
 
     def clear(self) -> None:
         self.normalized.clear()
         self.results.clear()
 
+    def _disable_persistent(self) -> None:
+        logger.warning("persistent claim cache unavailable; using in-memory cache")
+        self.persistent = None
 
-def _raw_claim_key(claim: str) -> str:
-    return " ".join(claim.lower().split())
+    async def get_normalized(self, key: str) -> NormalizedClaim | None:
+        value = self.normalized.get(key)
+        if value is None and self.persistent:
+            try:
+                value = await self.persistent.get_normalized(key)
+            except psycopg.Error:
+                self._disable_persistent()
+            if value is not None:
+                self.normalized.set(key, value)
+        return value
+
+    async def put_normalized(self, key: str, value: NormalizedClaim) -> None:
+        self.normalized.set(key, value)
+        if self.persistent:
+            try:
+                await self.persistent.put_normalized(key, value)
+            except psycopg.Error:
+                self._disable_persistent()
+
+    async def get_candidates(self, key: tuple[str, int]) -> ClaimCandidates | None:
+        value = self.results.get(key)
+        if value is None and self.persistent:
+            try:
+                value = await self.persistent.get_candidates(*key)
+            except psycopg.Error:
+                self._disable_persistent()
+            if value is not None:
+                self.results.set(key, value)
+        return value
+
+    async def put_candidates(self, key: tuple[str, int], value: ClaimCandidates) -> None:
+        self.results.set(key, value)
+        if self.persistent:
+            try:
+                await self.persistent.put_candidates(*key, value)
+            except psycopg.Error:
+                self._disable_persistent()
 
 
 async def retrieve_candidates(
@@ -48,21 +107,21 @@ async def retrieve_candidates(
     pmc: PMCClient | None = None,
 ) -> ClaimCandidates:
     """With `refresh`, skip cached values but still store the fresh result."""
-    raw_key = _raw_claim_key(claim)
-    normalized = None if cache is None or refresh else cache.normalized.get(raw_key)
+    raw_key = canonical_claim_key(claim)
+    normalized = None if cache is None or refresh else await cache.get_normalized(raw_key)
     if normalized is None:
         normalized = await run_in_threadpool(normalize_claim, claim)
         if cache is not None:
-            cache.normalized.set(raw_key, normalized)
+            await cache.put_normalized(raw_key, normalized)
 
     results_key = (normalized.query, limit)
-    cached = None if cache is None or refresh else cache.results.get(results_key)
+    cached = None if cache is None or refresh else await cache.get_candidates(results_key)
     if cached is not None:
         return cached.model_copy(update={"claim": claim, "normalized": normalized, "cached": True})
 
     retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, refresh)
     if cache is not None and retrieved.complete:
-        cache.results.set(results_key, retrieved.candidates)
+        await cache.put_candidates(results_key, retrieved.candidates)
     return retrieved.candidates
 
 

@@ -78,11 +78,15 @@ Crossref notices come from both publishers and the Retraction Watch database. A 
 
 `POST /api/claims` accepts `{"claim":"Does zinc cure colds?","limit":20}`.
 The frontend handoff contract and hosting requirements are in
-[`docs/claims-api.md`](docs/claims-api.md). Repeated claims are served from an
-in-memory cache (add `?refresh=true` to skip it); see the caching section there.
+[`docs/claims-api.md`](docs/claims-api.md). Repeated claims use the existing
+in-memory cache (add `?refresh=true` to skip it). Set `CACHE_DATABASE_URL` to
+an optional, separate PostgreSQL database to share cached claim results across
+processes and restarts. From `backend/`, run
+`python -m app.cache_admin put /path/to/claim-result.json --limit 20` to add a complete result manually. See
+the caching section of the API guide for the other commands and behavior.
 The claim must contain 1–2,000 characters; the optional limit is 1–100.
-Azure Foundry credentials are required for normalization. PostgreSQL is not
-required for this retrieval endpoint. The response has `status: "candidates"`,
+Azure Foundry credentials are required for normalization of uncached claims.
+PostgreSQL is optional for this retrieval endpoint. The response has `status: "candidates"`,
 the submitted `claim`, `normalized` retrieval fields, `query_translation`,
 PubMed's `total_results` (before deduplication), and `candidates`. Each candidate
 contains `article`, study-type `metadata`, and `access` with PMC full-text availability. `coverage` reports retrieved full-text,
