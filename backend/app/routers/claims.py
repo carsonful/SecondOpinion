@@ -57,7 +57,10 @@ async def search_claim(
         raise HTTPException(status_code=503, detail=str(exc)) from None
 
 
-@router.post("/overview/{analysis_id}", response_model=ResearchOverview)
+@router.post("/overview/{analysis_id}", response_model=ResearchOverview, responses={
+    410: {"description": "Search snapshot expired; refresh the search"},
+    503: {"description": "Overview took too long; retry while keeping the retrieved studies"},
+})
 async def research_overview(analysis_id: str) -> ResearchOverview:
     snapshot = snapshots.get(analysis_id)
     if snapshot is None:

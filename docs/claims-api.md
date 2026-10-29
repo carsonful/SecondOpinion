@@ -145,6 +145,21 @@ for the server's exact search snapshot. The live results page calls
 Unknown or expired IDs return 410; overall timeouts return 503. Snapshots last one hour
 in the current backend process; refresh the search to obtain another ID.
 
+### Overview error responses
+
+These responses are declared on the overview operation in `/openapi.json` and
+shown in the interactive `/docs` page:
+
+| Code | Meaning | Recovery |
+| --- | --- | --- |
+| 410 | The search snapshot is unknown or expired, including after a server restart. | Refresh the search to obtain a new `analysis_id`. Retrying the expired ID will not restore it. |
+| 503 | The overall overview operation exceeded its timeout. | Retry the overview; the already retrieved studies remain available. |
+
+Both errors use the standard JSON `detail` field. A timeout does not delete the
+search snapshot or its papers. A partial model/provider failure can instead be
+represented in a successful overview body with `partial` or `unavailable` status;
+it is distinct from the route's overall timeout response.
+
 The overview returns `basis: "abstracts"`, `status` (`complete`, `partial`,
 `unavailable`, or `insufficient_information`), `coverage`, `studies`, `synthesis`,
 and `cached`. `complete` means analysis completed for eligible sources, not that the
