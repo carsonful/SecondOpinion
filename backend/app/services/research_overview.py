@@ -17,7 +17,7 @@ from app.models.overview import (
 from app.services.cache import TTLCache
 
 logger = logging.getLogger(__name__)
-VERSION = "abstract-overview-v2"
+VERSION = "abstract-overview-v3-population"
 MAX_STUDIES = 20
 MAX_ABSTRACT_CHARS = 30000
 snapshots: TTLCache[str, ClaimCandidates] = TTLCache(3600, 128)
@@ -33,7 +33,12 @@ methods, participant counts or demographics. Explain whether the question direct
 matches (direct), addresses a nearby question (related), does not address it
 (not_addressed), or cannot be determined (unclear). Relevance is not agreement.
 Respect negation and distinctions between prevention, duration and severity,
-populations, doses, comparators and outcomes. Association does not show causation;
+populations, doses, comparators and outcomes. The supplied population is derived
+from indexed MeSH descriptors: animal findings must stay attributed to animals,
+in_vitro findings to laboratory/cell experiments, and unknown is not evidence of
+human participants. Human indexing can include mixed human/animal research;
+preserve the actual population reported in the abstract. Do not extrapolate
+animal or laboratory findings to people. Association does not show causation;
 a nonsignificant result does not prove no effect. Reviews synthesize research,
 not new participant trials. Missing results must be explicitly acknowledged.
 For both summary and relationship supply a contiguous verbatim passage from the
@@ -58,7 +63,10 @@ claims about papers not supplied, medical recommendations, quality grades,
 confidence scores, or true/false verdicts. Scope conclusions to the retrieved
 abstracts, not all research. State what findings suggest and preserve uncertainty,
 null results, harms and disagreement. Distinguish prevention, duration, severity,
-populations and formulations. Direct relevance does not mean support. When sources
+populations and formulations. Use the supplied population mapping to keep animal
+and in_vitro findings distinct from findings in people. Unknown does not mean
+human; human indexing does not exclude mixed populations. Do not turn animal or
+cell findings into human benefits in the combined overview. Direct relevance does not mean support. When sources
 are indirect or ambiguous, explicitly explain why the claim is not resolved.
 Do not treat association as causation or nonsignificance as proof of no effect.
 Do not count papers as votes or call a topic well/poorly researched from this set.
@@ -155,6 +163,7 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
                         explanation = await generate(client, StudyExplanation, READ_PROMPT, {
                             "claim": result.claim, "title": article.title, "abstract": article.abstract,
                             "design": candidate.metadata.design,
+                            "population": candidate.metadata.population,
                         })
                 for statement in (explanation.summary, explanation.relationship):
                     if statement.passage not in article.abstract:
@@ -184,6 +193,8 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
                         "claim": result.claim, "readings": [r.model_dump() for r in analyzed],
                         "integrity": {c.article.pmid: c.integrity.status for c in result.candidates
                                       if c.article.pmid in {r.pmid for r in analyzed}},
+                        "populations": {c.article.pmid: c.metadata.population for c in result.candidates
+                                        if c.article.pmid in {r.pmid for r in analyzed}},
                     })
                 allowed = {r.pmid for r in analyzed}
                 for observation in [*synthesis.observations, *synthesis.qualifications]:

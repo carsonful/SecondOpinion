@@ -1,10 +1,16 @@
 import { useEffect, useId, useState } from 'react'
-import { ClaimCandidates } from '../../types'
+import { ClaimCandidates, StudyPopulation } from '../../types'
 import { Candidate, Observation, Overview, Reading, SearchResult } from './researchTypes'
 import ClipboardBoard from './ClipboardBoard'
 import './CandidateResults.css'
 
 type StudyType = { label: string; letter: string; color: string }
+const POPULATIONS: Record<StudyPopulation, string> = {
+  human: 'Human-indexed · may include mixed populations',
+  animal: 'Animal study',
+  in_vitro: 'Laboratory / cell study',
+  unknown: 'Population not indexed',
+}
 const STUDY_TYPES: Record<string, StudyType> = {
   research_synthesis: { label: 'Research synthesis', letter: 'A', color: 'synthesis' },
   randomized_controlled_trial: { label: 'Randomized trial', letter: 'B', color: 'randomized' },
@@ -79,6 +85,7 @@ function StudyCard({ study, number, reading, pending }: { study: Candidate; numb
   return <article className="research-study" id={`study-${article.pmid}`} tabIndex={-1}>
     <div className="research-study__top"><span className="research-study__number">{String(number).padStart(2, '0')}</span>
       <div><div className="research-tags"><span>{type.label}</span><span>{article.year || 'Year unavailable'}</span>
+        <span>{POPULATIONS[metadata.population ?? 'unknown'] ?? POPULATIONS.unknown}</span>
         {explanation && <span className={`research-relevance research-relevance--${explanation.relevance}`}>{RELEVANCE[explanation.relevance]}</span>}
       </div>
       <h3><a href={article.url} target="_blank" rel="noreferrer">{article.title} <span aria-hidden="true">↗</span></a></h3>
