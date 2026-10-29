@@ -3,7 +3,9 @@
 Find research behind health claims.
 
 The app normalizes a health claim, searches PubMed, and displays related studies
-with study-type labels, abstracts, and PMC full-text access status. Live search
+with study-type labels, abstracts, and PMC full-text access status. The live results
+page automatically requests a cited research overview of the retrieved abstracts,
+with individual explanations, relevance coverage, and information gaps. Live search
 does not assign evidence grades, confidence scores, or verdicts.
 
 Three saved examples show curated verdicts. They load from PostgreSQL without
@@ -128,11 +130,38 @@ team section use light backgrounds in both themes.
 Study-type letters and colors identify research designs; they are not quality
 grades. See [the study-type key](docs/study-guide.md).
 
-Evidence appraisal, findings synthesis, automatic integrity screening in claim
-search, and live verdict generation remain future work. Internal scoring and
+Formal evidence appraisal and live verdict generation remain future work.
+Live search screens integrity notices and provides an abstract-based research
+overview; it does not grade studies or establish whether a claim is true. Internal scoring and
 integrity prototypes are retained in `evidence_workflow.py`, `evidence_models.py`,
 `services/weighting.py`, and `services/integrity.py`; the claims endpoint does not
 call them. Their proposed rules are in [the future grading plan](docs/evidence-grading.md).
 
 Metadata extraction still needs independent validation. Other open work includes
 deployment, accessibility review, and usability testing.
+
+## Automatic research overview
+
+Search returns an `analysis_id` for a trusted, immutable result snapshot. The results
+page immediately displays papers and automatically calls
+`POST /api/claims/overview/{analysis_id}`. Azure reads eligible abstracts (up to the
+first 20 retained papers), then synthesizes the validated readings with PMID citations.
+Retracted papers are excluded; corrections and expressions of concern are withheld
+because their effect on findings has not been resolved. Unchecked records remain
+explicitly labeled. Missing abstracts are not inferred from titles.
+
+The server checks that quoted passages occur in the abstract and that every overview
+citation identifies an analyzed paper. These checks establish provenance, not semantic
+accuracy. Interpretations still need independent evaluation. No scores, treatment
+recommendations, or automatic truth verdicts are intended. Coverage describes this
+retrieved set, not how extensively a topic has been researched overall.
+
+The overview is separate from retrieval: provider errors leave papers readable, partial
+coverage is shown, and retry reuses successful readings. Snapshot tokens expire after
+one hour (or server restart); refresh the search if expired. Snapshot, reading, and
+overview caches are bounded and in-process, so this first version requires a single
+backend worker or sticky routing. Shared snapshot storage is needed before using
+multiple interchangeable workers. Cache keys include exact claim, source content,
+integrity, and analysis version; the shared PubMed query cache is not used for synthesis.
+A fresh overview can take several minutes, with a 240-second server timeout. Existing
+saved-example pages and their curated verdicts are unchanged.
