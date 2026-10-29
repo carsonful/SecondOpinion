@@ -16,6 +16,7 @@ EXTRACTED = {
     "is_health_claim": True,
     "intervention": "zinc",
     "outcome": "common cold",
+    "comparator": None,
     "population": None,
     "relation": "cure",
     "negated": False,
@@ -78,6 +79,23 @@ def test_negation_and_population():
     result = normalize_response(data)
     assert result.negated
     assert result.query == '(zinc) AND (common cold) AND (children)'
+
+
+def test_comparator_is_searched_with_both_sides_of_the_comparison():
+    data = {**EXTRACTED, "intervention": "raw milk", "comparator": "pasteurized milk", "outcome": "health"}
+    result = normalize_response(data)
+    assert result.comparator == "pasteurized milk"
+    assert result.query == '(raw milk) AND (pasteurized milk) AND (health)'
+
+
+@pytest.mark.parametrize("intervention,term", [
+    ("measles-mumps-rubella (MMR) vaccine", "measles-mumps-rubella MMR vaccine"),
+    ('"zinc"[MeSH Terms]', "zinc MeSH Terms"),
+])
+def test_brackets_and_quotes_are_dropped_from_search_terms(intervention, term):
+    result = normalize_response({**EXTRACTED, "intervention": intervention})
+    assert result.intervention == term
+    assert result.query == f"({term}) AND (common cold)"
 
 
 @pytest.mark.parametrize("body", [

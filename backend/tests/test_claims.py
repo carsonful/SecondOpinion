@@ -2,6 +2,7 @@ import asyncio
 import os
 from collections.abc import Callable, Iterator
 
+import httpx2 as httpx
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
@@ -14,13 +15,16 @@ from app.models.full_text import RetrievalResult
 from app.models.normalization import NormalizedClaim
 from app.models.pubmed import PubMedArticle
 from app.routers.claims import get_claims_cache, get_pmc_client
+from app.routers.crossref import get_crossref_client
 from app.routers.pubmed import get_pubmed_client
 from app.services import claims as claims_service
 from app.services.cache import TTLCache
 from app.services.claims import ClaimsCache
+from app.services.crossref import CrossrefClient
 from app.services.durable_cache import PostgresClaimsCache
 from app.services.pmc import unavailable
-from tests.helpers import FakeClock, FakeNCBI, make_client
+from app.services.rate_limiter import RateLimiter
+from tests.helpers import FakeClock, FakeNCBI, esearch_response, load_fixture, make_client
 
 NORMALIZED = NormalizedClaim(
     query="(zinc) AND (common cold)", intervention="zinc", outcome="common cold",
@@ -32,6 +36,29 @@ def pmc_available(article: PubMedArticle) -> RetrievalResult:
     return unavailable(article, "not_available", "No PMC text in this test fixture")
 
 
+CrossrefHandler = Callable[[httpx.Request], httpx.Response]
+
+
+def crossref_recorded(request: httpx.Request) -> httpx.Response:
+    if "14651858" in request.url.raw_path.decode():
+        return httpx.Response(200, content=load_fixture("crossref/work_cochrane_clean.json"))
+    return httpx.Response(404, text="Resource not found.")
+
+
+def crossref_down(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(503)
+
+
+def crossref_client(handler: CrossrefHandler) -> CrossrefClient:
+    clock = FakeClock()
+    return CrossrefClient(
+        httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        mailto="team@example.com",
+        rate_limiter=RateLimiter(8, clock=clock, sleep=clock.sleep),
+        sleep=clock.sleep,
+    )
+
+
 class Calls:
     """Counts calls to each external service during a test."""
 
@@ -39,6 +66,7 @@ class Calls:
         self.normalize = 0
         self.ncbi = FakeNCBI(FakeClock())
         self.pmc = 0
+        self.crossref = 0
 
     @property
     def pubmed(self) -> int:
@@ -46,7 +74,7 @@ class Calls:
 
     @property
     def external(self) -> int:
-        return self.normalize + self.pubmed + self.pmc
+        return self.normalize + self.pubmed + self.pmc + self.crossref
 
 
 @pytest.fixture
@@ -69,7 +97,14 @@ def api(
 
     monkeypatch.setattr(claims_service, "normalize_claim", fake_normalize)
 
-    def build(pmc_handler: Callable[[PubMedArticle], RetrievalResult] = pmc_available) -> TestClient:
+    def build(
+        pmc_handler: Callable[[PubMedArticle], RetrievalResult] = pmc_available,
+        crossref_handler: CrossrefHandler = crossref_recorded,
+    ) -> TestClient:
+        def counted_crossref(request: httpx.Request) -> httpx.Response:
+            calls.crossref += 1
+            return crossref_handler(request)
+
         class CountedPMC:
             async def retrieve(self, article: PubMedArticle, *, refresh: bool = False) -> RetrievalResult:
                 calls.pmc += 1
@@ -77,6 +112,7 @@ def api(
 
         app.dependency_overrides[get_pubmed_client] = lambda: make_client(calls.ncbi)
         app.dependency_overrides[get_pmc_client] = lambda: CountedPMC()
+        app.dependency_overrides[get_crossref_client] = lambda: crossref_client(counted_crossref)
         app.dependency_overrides[get_claims_cache] = lambda: cache
         return TestClient(app)
 
@@ -93,7 +129,10 @@ def test_candidates_match_the_current_search_contract(api) -> None:
     assert [candidate["article"]["pmid"] for candidate in body["candidates"]] == [
         "38719213", "31478634", "32342851",
     ]
-    assert all(set(candidate) == {"article", "metadata", "access"} for candidate in body["candidates"])
+    assert all(
+        set(candidate) == {"article", "metadata", "access", "integrity"}
+        for candidate in body["candidates"]
+    )
     assert "verdict" not in body
 
 
@@ -202,9 +241,8 @@ def test_different_limits_are_cached_separately(api, calls: Calls) -> None:
     assert response.json()["cached"] is False
 
 
-@pytest.mark.parametrize("reason", ["request_failed", "parse_failed"])
-def test_results_with_a_failed_pmc_lookup_are_not_cached(api, calls: Calls, reason: str) -> None:
-    client = api(lambda article: unavailable(article, reason, "PMC unavailable"))
+def test_results_with_a_failed_pmc_lookup_are_not_cached(api, calls: Calls) -> None:
+    client = api(lambda article: unavailable(article, "request_failed", "PMC unavailable"))
     client.post("/api/claims", json=ZINC)
     pubmed_calls = calls.pubmed
 
@@ -212,6 +250,19 @@ def test_results_with_a_failed_pmc_lookup_are_not_cached(api, calls: Calls, reas
 
     assert response.json()["cached"] is False
     assert calls.pubmed > pubmed_calls
+
+
+@pytest.mark.parametrize("reason", ["parse_failed", "not_available", "too_large"])
+def test_results_with_a_permanent_pmc_outcome_are_cached(api, calls: Calls, reason: str) -> None:
+    # PMC returns the same document every time, so retrying can't change these.
+    client = api(lambda article: unavailable(article, reason, "No usable full text"))
+    client.post("/api/claims", json=ZINC)
+    pubmed_calls = calls.pubmed
+
+    response = client.post("/api/claims", json=ZINC)
+
+    assert response.json()["cached"] is True
+    assert calls.pubmed == pubmed_calls
 
 
 def test_cache_can_be_turned_off(api, calls: Calls, cache: ClaimsCache) -> None:
@@ -302,3 +353,89 @@ def test_manual_postgres_entry_survives_new_cache_and_skips_external_calls(
     assert refreshed.status_code == 200
     assert refreshed.json()["cached"] is False
     assert calls.external > before
+
+
+# --- Retraction and notice checks (#13, #19) -----------------------------------------
+
+def integrity(response) -> dict[str, str]:
+    return {c["article"]["pmid"]: c["integrity"]["status"] for c in response.json()["candidates"]}
+
+
+def test_every_study_gets_an_integrity_status(api) -> None:
+    response = api().post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+
+    assert response.status_code == 200
+    assert integrity(response) == {
+        "38719213": "no_notice_found",  # Cochrane review, Crossref checked it
+        "31478634": "unchecked",  # no DOI
+        "32342851": "unchecked",  # Crossref has no record of this DOI
+    }
+    labels = {c["integrity"]["label"] for c in response.json()["candidates"]}
+    assert labels == {"No notice found", "Integrity not checked"}
+
+
+def test_retracted_study_is_left_out_of_the_results_and_reported_with_its_notice(api) -> None:
+    def cochrane_retracted(request: httpx.Request) -> httpx.Response:
+        if "14651858" in request.url.raw_path.decode():
+            return httpx.Response(200, content=load_fixture("crossref/work_wakefield_retracted.json"))
+        return crossref_recorded(request)
+
+    response = api(crossref_handler=cochrane_retracted).post(
+        "/api/claims", json={"claim": "does zinc cure colds", "limit": 3}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "38719213" not in integrity(response)
+    assert body["coverage"]["retrieved_studies"] == len(body["candidates"]) == 2
+    [study] = body["excluded_retracted"]
+    assert study["article"]["pmid"] == "38719213"
+    assert study["integrity"]["label"] == "Retracted"
+    assert [n["notice_url"] for n in study["integrity"]["notices"]] == [
+        "https://doi.org/10.1016/s0140-6736(10)60175-4"
+    ]
+
+
+def test_pubmed_retraction_flag_excludes_a_study_without_crossref(api, calls: Calls) -> None:
+    calls.ncbi.esearch = lambda _: esearch_response(["9500320"])
+    calls.ncbi.efetch = lambda _: httpx.Response(
+        200, content=load_fixture("pubmed/efetch_retracted.xml")
+    )
+
+    response = api(crossref_handler=crossref_down).post(
+        "/api/claims", json={"claim": "does zinc cure colds", "limit": 3}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["candidates"] == []
+    assert [s["article"]["pmid"] for s in response.json()["excluded_retracted"]] == ["9500320"]
+
+
+def test_crossref_outage_still_returns_studies_marked_unchecked(api) -> None:
+    response = api(crossref_handler=crossref_down).post(
+        "/api/claims", json={"claim": "does zinc cure colds", "limit": 3}
+    )
+
+    assert response.status_code == 200
+    assert set(integrity(response).values()) == {"unchecked"}
+
+
+def test_results_with_a_failed_crossref_lookup_are_not_cached(api, calls: Calls) -> None:
+    client = api(crossref_handler=crossref_down)
+    client.post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+    pubmed_calls = calls.pubmed
+
+    response = client.post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+
+    assert response.json()["cached"] is False
+    assert calls.pubmed > pubmed_calls
+
+
+def test_cached_results_keep_their_integrity_status(api) -> None:
+    client = api()
+    first = client.post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+
+    second = client.post("/api/claims", json={"claim": "does zinc cure colds", "limit": 3})
+
+    assert second.json()["cached"] is True
+    assert integrity(second) == integrity(first)

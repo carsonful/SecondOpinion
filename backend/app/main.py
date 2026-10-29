@@ -23,7 +23,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    initialize_examples()
+    try:
+        initialize_examples()
+    except psycopg.Error:
+        # Saved examples are optional; the frontend falls back to a live search.
+        logger.warning("saved examples database unavailable at startup")
     persistent = app.state.claims_cache.persistent
     if persistent:
         try:

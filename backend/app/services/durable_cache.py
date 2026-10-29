@@ -11,7 +11,9 @@ from psycopg.types.json import Jsonb
 from app.models.claims import ClaimCandidates
 from app.models.normalization import NormalizedClaim
 
-FORMAT_VERSION = 1
+# Bump when the cached response shape changes. v2 adds per-study integrity notices,
+# so v1 entries (cached without retraction checks) are never served.
+FORMAT_VERSION = 2
 logger = logging.getLogger(__name__)
 
 SCHEMA = """
