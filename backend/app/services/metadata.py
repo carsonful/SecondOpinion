@@ -2,7 +2,7 @@
 
 import re
 
-from app.models.metadata import StudyDesign, StudyMetadata
+from app.models.metadata import StudyDesign, StudyMetadata, StudyPopulation
 from app.models.pubmed import PubMedArticle
 
 
@@ -37,5 +37,27 @@ def classify_study_type(article: PubMedArticle) -> StudyDesign:
     return StudyDesign.UNKNOWN
 
 
+IN_VITRO_TERMS = frozenset({"in vitro techniques", "cells, cultured", "cell culture techniques"})
+
+
+def classify_population(article: PubMedArticle) -> StudyPopulation:
+    """Read explicit MeSH descriptors, never infer participants from a trial tag.
+
+    Lab descriptors take precedence: cells can be human-derived without findings
+    in people. Otherwise Humans wins over Animals for mixed indexed records.
+    MeSH absence is common for recent/unindexed records and means unknown.
+    """
+    terms = {" ".join(term.split()).casefold() for term in article.mesh_terms}
+    if terms & IN_VITRO_TERMS:
+        return StudyPopulation.IN_VITRO
+    if "humans" in terms:
+        return StudyPopulation.HUMAN
+    if "animals" in terms:
+        return StudyPopulation.ANIMAL
+    return StudyPopulation.UNKNOWN
+
+
 def extract_metadata(article: PubMedArticle) -> StudyMetadata:
-    return StudyMetadata(design=classify_study_type(article))
+    return StudyMetadata(
+        design=classify_study_type(article), population=classify_population(article),
+    )

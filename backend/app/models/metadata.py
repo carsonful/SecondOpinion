@@ -19,5 +19,14 @@ class StudyDesign(StrEnum):
     UNKNOWN = "unknown"
 
 
+class StudyPopulation(StrEnum):
+    HUMAN = "human"
+    ANIMAL = "animal"
+    IN_VITRO = "in_vitro"
+    UNKNOWN = "unknown"
+
+
 class StudyMetadata(BaseModel):
     design: StudyDesign
+    # Older/manual payloads remain readable without inventing human participants.
+    population: StudyPopulation = StudyPopulation.UNKNOWN

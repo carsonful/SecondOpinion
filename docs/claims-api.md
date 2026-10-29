@@ -125,6 +125,20 @@ frontend needs `/api` routed to the backend and its origin in `CORS_ORIGINS`.
 
 ## Automatic abstract overview
 
+Each candidate's `metadata` includes `design` and `population` (`human`, `animal`,
+`in_vitro`, or `unknown`). Population comes from explicit MeSH descriptors, not the
+publication type or an inferred participant population. Lab descriptors take
+precedence; otherwise `Humans` wins for mixed human/animal records, then `Animals`.
+Missing indexing means `unknown`. See [the study guide](study-guide.md) for the
+descriptor list and limitations. The same field is returned on excluded studies.
+
+Persistent claim-cache format v3 invalidates pre-population entries. Restart the
+backend on deployment to clear older in-memory snapshots/results. Older manual
+JSON payloads without population remain readable with `unknown`; to obtain an
+indexed label, refresh the search. Overview version `abstract-overview-v3-population`
+also invalidates prior readings and syntheses. Both reading and synthesis prompts
+receive population metadata and must not generalize animal/lab findings to people.
+
 `POST /api/claims` additionally returns `analysis_id`, an opaque, temporary identifier
 for the server's exact search snapshot. The live results page calls
 `POST /api/claims/overview/{analysis_id}` automatically, without resubmitting source text.

@@ -11,9 +11,9 @@ from psycopg.types.json import Jsonb
 from app.models.claims import ClaimCandidates
 from app.models.normalization import NormalizedClaim
 
-# Bump when the cached response shape changes. v2 adds per-study integrity notices,
-# so v1 entries (cached without retraction checks) are never served.
-FORMAT_VERSION = 2
+# v3 recomputes population labels from MeSH rather than serving pre-label records.
+# Older manually submitted payloads still validate as unknown, never as human.
+FORMAT_VERSION = 3
 logger = logging.getLogger(__name__)
 
 SCHEMA = """

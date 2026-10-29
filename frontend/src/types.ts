@@ -1,5 +1,7 @@
 import { ReactNode } from 'react'
 
+export type StudyPopulation = 'human' | 'animal' | 'in_vitro' | 'unknown'
+
 export interface FullTextAccess {
   level: 'full_text' | 'abstract_only' | 'metadata_only'
   reason: string
@@ -34,6 +36,7 @@ export interface ClaimCandidates {
     }
     metadata: {
       design: string
+      population?: StudyPopulation
     }
     access: FullTextAccess
   }[]
