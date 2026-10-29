@@ -53,6 +53,7 @@ class CandidateStudy(BaseModel):
 
 class ClaimCandidates(BaseModel):
     status: Literal["candidates"] = "candidates"
+    analysis_id: str | None = Field(default=None, description="Temporary token for an overview of this exact search snapshot.")
     claim: str
     normalized: NormalizedClaim
     query_translation: str | None

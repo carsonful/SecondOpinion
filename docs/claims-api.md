@@ -122,3 +122,28 @@ normalization of uncached claims. PostgreSQL is optional for claim search; saved
 verdict examples use `DATABASE_URL` separately. The local Vite server proxies
 `/api` to port 8000. A hosted
 frontend needs `/api` routed to the backend and its origin in `CORS_ORIGINS`.
+
+## Automatic abstract overview
+
+`POST /api/claims` additionally returns `analysis_id`, an opaque, temporary identifier
+for the server's exact search snapshot. The live results page calls
+`POST /api/claims/overview/{analysis_id}` automatically, without resubmitting source text.
+Unknown or expired IDs return 410; overall timeouts return 503. Snapshots last one hour
+in the current backend process; refresh the search to obtain another ID.
+
+The overview returns `basis: "abstracts"`, `status` (`complete`, `partial`,
+`unavailable`, or `insufficient_information`), `coverage`, `studies`, `synthesis`,
+and `cached`. `complete` means analysis completed for eligible sources, not that the
+search covers all relevant research. Per-study statuses are `analyzed`, `no_abstract`,
+`withheld`, `failed`, and `outside_limit`. Successful explanations contain `summary`
+and `relationship` (each has `text` and a verbatim `passage`), `relevance` (`direct`,
+`related`, `not_addressed`, `unclear`), and `gaps`. Relevance is not agreement or quality.
+
+Synthesis observations and qualifications contain `text` and `pmids`; IDs must refer
+to successfully analyzed sources. Coverage counts are computed in code. No-abstract,
+withheld, failed, and outside-limit records are not included in the synthesis.
+Retractions remain in the search response's `excluded_retracted` list. Corrections
+and expressions of concern are withheld pending resolution. Only the first 20
+retained papers are considered for analysis. Full text is not used in this version.
+Partial failures are not cached as finished overviews; successful readings can be
+reused on retry. Concurrent overview requests share the same work.

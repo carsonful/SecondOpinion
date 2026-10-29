@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -8,6 +9,9 @@ from app.routers.pubmed import PubMedDep
 from app.services.pmc import PMCClient
 from app.services.claims import ClaimsCache, retrieve_candidates
 from app.services.normalization import ClaimNormalizationError, FoundryUnavailableError
+
+from app.models.overview import ResearchOverview
+from app.services.research_overview import register_snapshot, snapshots, shared_overview
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 
@@ -42,11 +46,24 @@ async def search_claim(
     Repeated claims are served from an in-memory cache; `cached` says when.
     """
     try:
-        return await retrieve_candidates(
+        result = await retrieve_candidates(
             request.claim, request.limit, pubmed, cache=cache, refresh=refresh, pmc=pmc,
             crossref=crossref,
         )
+        return result.model_copy(update={"analysis_id": register_snapshot(result)})
     except ClaimNormalizationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     except FoundryUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None
+
+
+@router.post("/overview/{analysis_id}", response_model=ResearchOverview)
+async def research_overview(analysis_id: str) -> ResearchOverview:
+    snapshot = snapshots.get(analysis_id)
+    if snapshot is None:
+        raise HTTPException(status_code=410, detail="Search snapshot expired. Refresh the search.")
+    try:
+        async with asyncio.timeout(240):
+            return await shared_overview(snapshot)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Overview took too long. Retry; your studies are still available.") from None
