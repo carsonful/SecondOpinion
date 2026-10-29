@@ -1,0 +1,773 @@
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE" Owner="NLM" IndexingMethod="Curated">
+      <PMID Version="1">42907999</PMID>
+      <DateCompleted>
+        <Year>2026</Year>
+        <Month>10</Month>
+        <Day>22</Day>
+      </DateCompleted>
+      <DateRevised>
+        <Year>2026</Year>
+        <Month>10</Month>
+        <Day>26</Day>
+      </DateRevised>
+      <Article PubModel="Electronic">
+        <Journal>
+          <ISSN IssnType="Electronic">1746-6148</ISSN>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>22</Volume>
+            <Issue>1</Issue>
+            <PubDate>
+              <Year>2026</Year>
+              <Month>Jul</Month>
+              <Day>24</Day>
+            </PubDate>
+          </JournalIssue>
+          <Title>BMC veterinary research</Title>
+          <ISOAbbreviation>BMC Vet Res</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>Combined cold atmospheric plasma and photobiomodulation is associated with improved early macroscopic and ultrasonographic wound-healing parameters after unilateral mastectomy in female dogs: an exploratory randomized intra-individual controlled clinical study.</ArticleTitle>
+        <ELocationID EIdType="pii" ValidYN="Y">620</ELocationID>
+        <ELocationID EIdType="doi" ValidYN="Y">10.1186/s12917-026-05746-8</ELocationID>
+        <Abstract>
+          <AbstractText Label="BACKGROUND" NlmCategory="BACKGROUND">Postmastectomy complications remain relevant in veterinary surgery. Although cold atmospheric plasma (CAP) and photobiomodulation (PBM) may improve tissue repair, evidence on their combined use is limited. This exploratory pilot study evaluated CAP-PBM therapy in nine female dogs undergoing unilateral mastectomy.</AbstractText>
+          <AbstractText Label="METHODS" NlmCategory="METHODS">A prospective, randomized, blinded, intra-individual controlled clinical study was conducted in nine female dogs with mammary neoplasia undergoing clinically indicated unilateral mastectomy. In each dog, one half of the surgical wound was randomly assigned to receive sequential CAP and PBM therapy, while the contralateral half remained untreated and served as an intra-individual control. Evaluations were performed on postoperative days 3, 7, and 14 (D3, D7, and D14) using macroscopic scoring systems, ultrasonography, and infrared thermography; histomorphometric analysis was performed only on D7.</AbstractText>
+          <AbstractText Label="RESULTS" NlmCategory="RESULTS">Treated regions showed significantly lower Modified Hollander Scar Scale (p &lt; 0.001) and Modified Draize Scoring System (p = 0.001) scores. Ultrasonographic assessment demonstrated lower semiquantitative scores (p = 0.029) and reduced subcutaneous thickness (p = 0.034), especially during the early postoperative period. Thermographic findings did not differ significantly between groups. Histological analysis revealed numerically greater re-epithelialization in treated areas, although without statistical significance (p &gt; 0.05).</AbstractText>
+          <AbstractText Label="CONCLUSIONS" NlmCategory="CONCLUSIONS">In this exploratory pilot study, combined CAP + PBM therapy was associated with improved early macroscopic and ultrasonographic healing parameters after mastectomy in female dogs. These preliminary findings support further investigation of CAP + PBM as a promising non-invasive adjuvant strategy for postoperative wound management, pending confirmation in larger, adequately powered randomized studies.</AbstractText>
+          <CopyrightInformation>© 2026. The Author(s).</CopyrightInformation>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>da Silva</LastName>
+            <ForeName>Guilherme Ramon Vieira</ForeName>
+            <Initials>GRV</Initials>
+            <Identifier Source="ORCID">0000-0002-2658-8776</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Oliveira Filho</LastName>
+            <ForeName>Márcio Santos</ForeName>
+            <Initials>MS</Initials>
+            <Identifier Source="ORCID">0009-0001-9919-4831</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de França Silvestre</LastName>
+            <ForeName>Samuel Ferreira</ForeName>
+            <Initials>SF</Initials>
+            <Identifier Source="ORCID">0009-0001-6289-4463</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Carneiro</LastName>
+            <ForeName>Gabrielle Arruda</ForeName>
+            <Initials>GA</Initials>
+            <Identifier Source="ORCID">0009-0005-5606-4104</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Lucena</LastName>
+            <ForeName>Rivaldo Bruno Medeiros</ForeName>
+            <Initials>RBM</Initials>
+            <Identifier Source="ORCID">0009-0006-1035-3194</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Costa</LastName>
+            <ForeName>Clarisse Maria Rodrigues</ForeName>
+            <Initials>CMR</Initials>
+            <Identifier Source="ORCID">0009-0001-9498-0243</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Facundo</LastName>
+            <ForeName>Pedro Lucas Diogo</ForeName>
+            <Initials>PLD</Initials>
+            <Identifier Source="ORCID">0009-0007-8078-5627</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Silva</LastName>
+            <ForeName>Fernando Lucas Costa</ForeName>
+            <Initials>FLC</Initials>
+            <Identifier Source="ORCID">0009-0006-4729-3703</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Paula Antunes</LastName>
+            <ForeName>João Marcelo Azevedo</ForeName>
+            <Initials>JMA</Initials>
+            <Identifier Source="ORCID">0000-0003-3922-1428</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Castro Demoner</LastName>
+            <ForeName>Larissa</ForeName>
+            <Initials>L</Initials>
+            <Identifier Source="ORCID">0000-0003-0023-8046</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Paula</LastName>
+            <ForeName>Valéria Veras</ForeName>
+            <Initials>VV</Initials>
+            <Identifier Source="ORCID">0000-0003-4292-4861</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Carvalho</LastName>
+            <ForeName>Airton Torres</ForeName>
+            <Initials>AT</Initials>
+            <Identifier Source="ORCID">0000-0003-3395-4444</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Biosciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Barboza</LastName>
+            <ForeName>Carlos Augusto Galvão</ForeName>
+            <Initials>CAG</Initials>
+            <Identifier Source="ORCID">0000-0003-1979-9919</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Morphology - UFRN, Av. Senador Salgado Filho, 3000, Lagoa Nova, Natal, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Júnior</LastName>
+            <ForeName>Clodomiro Alves</ForeName>
+            <Initials>CA</Initials>
+            <Identifier Source="ORCID">0000-0002-5547-5922</Identifier>
+            <AffiliationInfo>
+              <Affiliation>CiTED - Integrated Center for Technological Innovation of the Semi-Arid - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Oliveira</LastName>
+            <ForeName>Moacir Franco</ForeName>
+            <Initials>MF</Initials>
+            <Identifier Source="ORCID">0000-0002-6269-0823</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Almeida Amorim</LastName>
+            <ForeName>Marcela Maria</ForeName>
+            <Initials>MM</Initials>
+            <Identifier Source="ORCID">0000-0002-4164-4852</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Paulo Cisneiros Veterinary Hospital - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>de Moura</LastName>
+            <ForeName>Carlos Eduardo Bezerra</ForeName>
+            <Initials>CEB</Initials>
+            <Identifier Source="ORCID">0000-0002-7960-5373</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Animal Sciences - UFERSA, Av. Francisco Motta, 572, Costa e Silva, Mossoró, RN, Brazil. carlos.moura@ufersa.edu.br.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <Language>eng</Language>
+        <PublicationTypeList>
+          <PublicationType UI="D016428">Journal Article</PublicationType>
+          <PublicationType UI="D016449">Randomized Controlled Trial</PublicationType>
+        </PublicationTypeList>
+        <ArticleDate DateType="Electronic">
+          <Year>2026</Year>
+          <Month>07</Month>
+          <Day>24</Day>
+        </ArticleDate>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>England</Country>
+        <MedlineTA>BMC Vet Res</MedlineTA>
+        <NlmUniqueID>101249759</NlmUniqueID>
+        <ISSNLinking>1746-6148</ISSNLinking>
+      </MedlineJournalInfo>
+      <ChemicalList>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D058626">Plasma Gases</NameOfSubstance>
+        </Chemical>
+      </ChemicalList>
+      <CitationSubset>IM</CitationSubset>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D000818" MajorTopicYN="N">Animals</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D005260" MajorTopicYN="N">Female</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D004285" MajorTopicYN="N">Dogs</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008408" MajorTopicYN="Y">Mastectomy</DescriptorName>
+          <QualifierName UI="Q000662" MajorTopicYN="N">veterinary</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D014945" MajorTopicYN="Y">Wound Healing</DescriptorName>
+          <QualifierName UI="Q000528" MajorTopicYN="N">radiation effects</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D028022" MajorTopicYN="Y">Low-Level Light Therapy</DescriptorName>
+          <QualifierName UI="Q000662" MajorTopicYN="N">veterinary</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010865" MajorTopicYN="N">Pilot Projects</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D058626" MajorTopicYN="Y">Plasma Gases</DescriptorName>
+          <QualifierName UI="Q000627" MajorTopicYN="N">therapeutic use</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D015674" MajorTopicYN="Y">Mammary Neoplasms, Animal</DescriptorName>
+          <QualifierName UI="Q000601" MajorTopicYN="N">surgery</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D004283" MajorTopicYN="Y">Dog Diseases</DescriptorName>
+          <QualifierName UI="Q000601" MajorTopicYN="N">surgery</QualifierName>
+          <QualifierName UI="Q000628" MajorTopicYN="N">therapy</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D011446" MajorTopicYN="N">Prospective Studies</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D014463" MajorTopicYN="N">Ultrasonography</DescriptorName>
+          <QualifierName UI="Q000662" MajorTopicYN="N">veterinary</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D013817" MajorTopicYN="N">Thermography</DescriptorName>
+          <QualifierName UI="Q000662" MajorTopicYN="N">veterinary</QualifierName>
+        </MeshHeading>
+      </MeshHeadingList>
+      <KeywordList Owner="NOTNLM">
+        <Keyword MajorTopicYN="N">Alternative therapies</Keyword>
+        <Keyword MajorTopicYN="N">Low level laser</Keyword>
+        <Keyword MajorTopicYN="N">Non-thermal plasma</Keyword>
+        <Keyword MajorTopicYN="N">Rehabilitation</Keyword>
+        <Keyword MajorTopicYN="N">Wound healing</Keyword>
+      </KeywordList>
+      <CoiStatement>Declarations. Ethics approval and consent to participate: This study was approved by the Animal Use Ethics Committee of the Federal Rural University of the Semi-Arid Region (CEUA/UFERSA; protocol number: 27/2025). All procedures were performed in client-owned dogs undergoing clinically indicated unilateral mastectomy, and no animal was subjected to surgery solely for research purposes. Informed consent was obtained from the owner or legal custodian of the animal described in this work for all procedures undertaken. No animals or people are identifiable within this publication, and therefore additional informed consent for publication was not required. Consent for publication: Not applicable. Competing interests: The authors declare no competing interests.</CoiStatement>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="received">
+          <Year>2026</Year>
+          <Month>5</Month>
+          <Day>29</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="accepted">
+          <Year>2026</Year>
+          <Month>7</Month>
+          <Day>15</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>2026</Year>
+          <Month>10</Month>
+          <Day>22</Day>
+          <Hour>23</Hour>
+          <Minute>30</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>2026</Year>
+          <Month>10</Month>
+          <Day>22</Day>
+          <Hour>23</Hour>
+          <Minute>29</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>2026</Year>
+          <Month>10</Month>
+          <Day>22</Day>
+          <Hour>22</Hour>
+          <Minute>38</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pmc-release">
+          <Year>2026</Year>
+          <Month>7</Month>
+          <Day>24</Day>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>epublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">42907999</ArticleId>
+        <ArticleId IdType="pmc">PMC13685181</ArticleId>
+        <ArticleId IdType="doi">10.1186/s12917-026-05746-8</ArticleId>
+        <ArticleId IdType="pii">10.1186/s12917-026-05746-8</ArticleId>
+      </ArticleIdList>
+      <ReferenceList>
+        <Reference>
+          <Citation>Srisawat W, Pringproa K, Prachasilchai W, Thongtharb A, Sthitmatee N. Epidemiology and classification for canine and feline mammary gland tumors: a histopathological survey of 437 mammary gland tumor biopsies performed in a secondary care hospital in Chiang Mai, Thailand from 2012 to 2019. PeerJ. 2024;12. 10.7717/peerj.17077.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.7717/peerj.17077</ArticleId>
+            <ArticleId IdType="pmc">PMC10946389</ArticleId>
+            <ArticleId IdType="pubmed">38500523</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Vascellari M, Capello K, Carminato A, Zanardello C, Baioni E, Mutinelli F. Incidence of mammary tumors in the canine population living in the Veneto region (Northeastern Italy): risk factors and similarities to human breast cancer. Prev Vet Med. 2016;126:183–9. 10.1016/j.prevetmed.2016.02.008.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.prevetmed.2016.02.008</ArticleId>
+            <ArticleId IdType="pubmed">26948297</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cassali GD, et al. Consensus regarding the diagnosis, prognosis and treatment of canine and feline mammary tumors. Braz J Vet Pathol. 2020;13:555 – 74. 10.24070/bjvp.1983-0246.v13i3p555-574.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.24070/bjvp.1983-0246.v13i3p555-574</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Horta RS, et al. Surgical stress and postoperative complications related to regional and radical mastectomy in dogs. Acta Vet Scand. 2015;57:34. 10.1186/s13028-015-0121-3.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1186/s13028-015-0121-3</ArticleId>
+            <ArticleId IdType="pmc">PMC4480898</ArticleId>
+            <ArticleId IdType="pubmed">26104069</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Gilbertson SR, et al. Canine mammary epithelial neoplasms: biologic implications of morphologic characteristics assessed in 232 dogs. Vet Pathol. 1983;20:127–42. 10.1177/030098588302000201.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1177/030098588302000201</ArticleId>
+            <ArticleId IdType="pubmed">6836870</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Stratmann N, et al. Mammary tumor recurrence in bitches after regional mastectomy. Vet Surg. 2008;37:82–6. 10.1111/j.1532-950x.2007.00351.x.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1111/j.1532-950x.2007.00351.x</ArticleId>
+            <ArticleId IdType="pubmed">18199060</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Papazoglou LG, Basdani E, Rabidi S, Patsikas MN, Karayiannopoulou M. Current surgical options for mammary tumor removal in dogs. J Vet Sci Med. 2012;2:6. 10.13188/2325-4645.1000007.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.13188/2325-4645.1000007</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Sorenmo KU, et al. Factors influencing complications following mastectomy procedures in dogs with mammary gland tumors. J Am Vet Med Assoc. 2021;258:295–300. 10.2460/javma.258.3.295.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.2460/javma.258.3.295</ArticleId>
+            <ArticleId IdType="pubmed">33496617</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Silva MA, et al. Radical mastectomy efficiently improves long-term clinical outcomes in canine mammary tumors. Animals. 2024;14:3687. 10.3390/ani14243687.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ani14243687</ArticleId>
+            <ArticleId IdType="pmc">PMC11672819</ArticleId>
+            <ArticleId IdType="pubmed">39765590</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Al-Hilli Z, Wilkerson A. Breast surgery: management of postoperative complications following operations for breast cancer. Surg Clin North Am. 2021;101:845–63. 10.1016/j.suc.2021.06.014.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.suc.2021.06.014</ArticleId>
+            <ArticleId IdType="pubmed">34537147</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ahn SJ, Woo TY, Lee DW, Lew DH, Song SY. Nipple-areolar complex ischemia and necrosis in nipple-sparing mastectomy. Eur J Surg Oncol. 2018;44:1170–6. 10.1016/j.ejso.2018.05.006.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.ejso.2018.05.006</ArticleId>
+            <ArticleId IdType="pubmed">29859649</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ebner F, et al. Seroma in breast surgery: all the surgeon’s fault? Arch Gynecol Obstet. 2018;298:951–9. 10.1007/s00404-018-4880-8.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s00404-018-4880-8</ArticleId>
+            <ArticleId IdType="pubmed">30196358</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Gambardella C, et al. Advanced hemostasis in axillary lymph node dissection for locally advanced breast cancer: new technology devices compared in the prevention of seroma formation. BMC Surg. 2019;18(Suppl 1):125. 10.1186/s12893-018-0454-8.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1186/s12893-018-0454-8</ArticleId>
+            <ArticleId IdType="pmc">PMC7402581</ArticleId>
+            <ArticleId IdType="pubmed">31074399</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ilonzo N, et al. Breast reconstruction after mastectomy: a ten-year analysis of trends and immediate postoperative outcomes. Breast. 2017;32:7–12. 10.1016/j.breast.2016.11.023.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.breast.2016.11.023</ArticleId>
+            <ArticleId IdType="pubmed">27988412</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Jagsi R, et al. Complications after mastectomy and immediate breast reconstruction for breast cancer: a claims-based analysis. Ann Surg. 2016;263:219–27. 10.1097/sla.0000000000001177.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1097/sla.0000000000001177</ArticleId>
+            <ArticleId IdType="pmc">PMC4824182</ArticleId>
+            <ArticleId IdType="pubmed">25876011</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Rusby JE, et al. Nipple-sparing mastectomy. Br J Surg. 2010;97:305–16. 10.1002/bjs.6970.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1002/bjs.6970</ArticleId>
+            <ArticleId IdType="pubmed">20101646</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Marchegiani A, et al. A prospective, blinded, open-label clinical trial to assess the ability of fluorescent light energy to enhance wound healing after mastectomy in female dogs. Animals. 2024;14:1250. 10.3390/ani14081250.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ani14081250</ArticleId>
+            <ArticleId IdType="pmc">PMC11047670</ArticleId>
+            <ArticleId IdType="pubmed">38672398</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Diaz R, et al. Reducing postoperative complications in high-risk breast surgery patients: a preliminary study on the efficacy of NPWT dressing. J Pers Med. 2025;15:104. 10.3390/jpm15030104.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/jpm15030104</ArticleId>
+            <ArticleId IdType="pmc">PMC11943131</ArticleId>
+            <ArticleId IdType="pubmed">40137420</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Guo L, et al. Application of non-thermal plasma in medicine: a bibliometric and visualization analysis. Front Phys. 2023;11:1325851. 10.3389/fphy.2023.1325851.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3389/fphy.2023.1325851</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Taha N, et al. The effects of low-level laser therapy on wound healing and pain management in skin wounds: a systematic review and meta-analysis. Cureus. 2024;16. 10.7759/cureus.72542.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.7759/cureus.72542</ArticleId>
+            <ArticleId IdType="pmc">PMC11602420</ArticleId>
+            <ArticleId IdType="pubmed">39610644</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Fofana M, et al. Selective treatments of prostate tumor cells with a cold atmospheric plasma jet. Clin Plasma Med. 2020. 10.1016/j.cpme.2020.100098. 17–18:100098.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.cpme.2020.100098</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Laroussi M. Cold plasma in medicine and healthcare: the new frontier in low temperature plasma applications. Front Phys. 2020;8:74. 10.3389/fphy.2020.00074.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3389/fphy.2020.00074</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Amini M, Jahandideh A, Dehghanpisheh P, et al. Comparative study of histological change after local treatments with zinc oxide, infrared rays, ultraviolet rays, and cold plasma in rat model of diabetic foot. Indian J Surg. 2020;82:1094–9. 10.1007/s12262-020-02143-9.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s12262-020-02143-9</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Kalghatgi S, et al. Endothelial cell proliferation is enhanced by low dose non-thermal plasma through fibroblast growth factor-2 release. Ann Biomed Eng. 2010;38:748–57. 10.1007/s10439-009-9868-x.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s10439-009-9868-x</ArticleId>
+            <ArticleId IdType="pubmed">20013154</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Schmidt A, et al. A cold plasma jet accelerates wound healing in a murine model of full-thickness skin wounds. Exp Dermatol. 2017;26:156–62. 10.1111/exd.13156.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1111/exd.13156</ArticleId>
+            <ArticleId IdType="pubmed">27492871</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Schmidt A, et al. One year follow-up risk assessment in SKH-1 mice and wounds treated with an argon plasma jet. Int J Mol Sci. 2017;18:868. 10.3390/ijms18040868.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ijms18040868</ArticleId>
+            <ArticleId IdType="pmc">PMC5412449</ArticleId>
+            <ArticleId IdType="pubmed">28422070</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Kim CK, et al. Antibacterial and anticandidal effects of atmospheric-pressure, non-thermal, nitrogen- and argon-plasma pulses. Dermatol Ther. 2022;35. 10.1111/dth.15222.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1111/dth.15222</ArticleId>
+            <ArticleId IdType="pubmed">34820982</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Scholtz V, et al. Non-thermal plasma treatment of ESKAPE pathogens: a review. Front Microbiol. 2021;12:737635. 10.3389/fmicb.2021.737635.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3389/fmicb.2021.737635</ArticleId>
+            <ArticleId IdType="pmc">PMC8546340</ArticleId>
+            <ArticleId IdType="pubmed">34712211</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Rodríguez-Méndez BG, et al. Harnessing non-thermal plasma to supercharge recovery in abdominal surgeries: a pilot study. J Clin Med. 2024;13:408. 10.3390/jcm13020408.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/jcm13020408</ArticleId>
+            <ArticleId IdType="pmc">PMC10816705</ArticleId>
+            <ArticleId IdType="pubmed">38256546</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Anders JJ, Lanzafame RJ, Arany PR. Low-level light/laser therapy versus photobiomodulation therapy. Photomed Laser Surg. 2015;33:183–4. 10.1089/pho.2015.9848.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1089/pho.2015.9848</ArticleId>
+            <ArticleId IdType="pmc">PMC4390214</ArticleId>
+            <ArticleId IdType="pubmed">25844681</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Mosca RC, et al. Photobiomodulation therapy for wound care: a potent, noninvasive, photoceutical approach. Adv Skin Wound Care. 2019;32:157 – 67. 10.1097/01.asw.0000553600.97572.d2. </Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1097/01.asw.0000553600.97572.d2</ArticleId>
+            <ArticleId IdType="pubmed">30889017</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Chung H, et al. The nuts and bolts of low-level laser (light) therapy. Ann Biomed Eng. 2012;40:516 – 33. 10.1007/s10439-011-0454-7.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s10439-011-0454-7</ArticleId>
+            <ArticleId IdType="pmc">PMC3288797</ArticleId>
+            <ArticleId IdType="pubmed">22045511</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Szymańska A, Budzisz E, Erkiert-Polguj A. The anti-acne effect of near-infrared low-level laser therapy. Clin Cosmet Investig Dermatol. 2021;14:1045–51. 10.2147/ccid.s323132.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.2147/ccid.s323132</ArticleId>
+            <ArticleId IdType="pmc">PMC8403573</ArticleId>
+            <ArticleId IdType="pubmed">34471368</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>De Sousa APC, et al. Effect of LED phototherapy of three distinct wavelengths on fibroblasts on wound healing: a histological study in a rodent model. Photomed Laser Surg. 2010;28:547–52. 10.1089/pho.2009.2605.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1089/pho.2009.2605</ArticleId>
+            <ArticleId IdType="pubmed">20001321</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Chiu ST, et al. Effect of various photobiomodulation regimens on breast cancer-related lymphedema: a systematic review and meta-analysis. Lasers Med Sci. 2023;39:11. 10.1007/s10103-023-03959-z.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s10103-023-03959-z</ArticleId>
+            <ArticleId IdType="pubmed">38129368</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Songca SP. Combinations of photodynamic therapy with other minimally invasive therapeutic technologies against cancer and microbial infections. Int J Mol Sci. 2023;24:10875. 10.3390/ijms241310875.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ijms241310875</ArticleId>
+            <ArticleId IdType="pmc">PMC10341934</ArticleId>
+            <ArticleId IdType="pubmed">37446050</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ha J-H, Kim Y-J. Photodynamic and cold atmospheric plasma combination therapy using polymeric nanoparticles for the synergistic treatment of cervical cancer. Int J Mol Sci. 2021;22:1172. 10.3390/ijms22031172.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ijms22031172</ArticleId>
+            <ArticleId IdType="pmc">PMC7865232</ArticleId>
+            <ArticleId IdType="pubmed">33504007</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Sharif H, Aghayan S. The effect of cold plasma and low-level laser therapy on oral fibroblast proliferation. Immunol Genet J. 2024;6:67–78. 10.18502/igj.v6i2.16411.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.18502/igj.v6i2.16411</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Hollander JE, et al. Wound registry: development and validation. Ann Emerg Med. 1995;25:675–84. 10.1016/s0196-0644(95)70183-4.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/s0196-0644(95)70183-4</ArticleId>
+            <ArticleId IdType="pubmed">7741347</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Draize JH, et al. Methods for the study of irritation and toxicity of substances applied topically to the skin and mucous membranes. J Pharmacol Exp Ther. 1944;82:377–90. 10.1016/s0022-3565(25)08751-8.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/s0022-3565(25)08751-8</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>MacPhail C. Surgery of the reproductive and genital systems. In: Fossum TW, editor. Small animal surgery. 5th ed. St. Louis: Mosby; 2018. pp. 720–87.</Citation>
+        </Reference>
+        <Reference>
+          <Citation>Holanda AGA, et al. Use of cold atmospheric plasma in the treatment of squamous cell carcinoma: in vitro effects and clinical application in feline tumors: a pilot study. Top Companion Anim Med. 2023;53–54:100773. 10.1016/j.tcam.2023.100773.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.tcam.2023.100773</ArticleId>
+            <ArticleId IdType="pubmed">36990177</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>da Silva GRV, Francelino LEC, Silvestre SFF, et al. Use of cold atmospheric plasma (CAP) for the control of gingival inflammation in a rabbit (Oryctolagus cuniculus) with progressive syndrome of acquired dental disease (PSADD): case report. Vet Res Commun. 2025;49:206. 10.1007/s11259-025-10775-z.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1007/s11259-025-10775-z</ArticleId>
+            <ArticleId IdType="pubmed">40392416</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Bekeschus S, et al. The plasma jet kINPen – a powerful tool for wound healing. Clin Plasma Med. 2016;4:19–28. 10.1016/j.cpme.2016.01.001.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.cpme.2016.01.001</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Rashidi S, et al. Low level laser therapy for the treatment of chronic wound: clinical considerations. Biomed Pharmacol J. 2015;8:1121–7. 10.13005/bpj/866.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.13005/bpj/866</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Lin L, Zhuang D, Guo H, Zheng M, Zhu Q, Xu Y, et al. Application of infrared thermography for predicting pressure injury healing: a prospective study. J Tissue Viability. 2025;34:100857. 10.1016/j.jtv.2025.100857.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.jtv.2025.100857</ArticleId>
+            <ArticleId IdType="pubmed">39826281</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Mandarim-de-Lacerda CA, Del Sol M. Tips for studies with quantitative morphology (morphometry and stereology). Int J Morphol. 2017;35:1482–94. 10.4067/S0717-95022017000401482.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.4067/S0717-95022017000401482</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Moszczyńska J, Roszek K, Wiśniewski M. Non-thermal plasma application in medicine—focus on reactive species involvement. Int J Mol Sci. 2023;24:12667. 10.3390/ijms241612667.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/ijms241612667</ArticleId>
+            <ArticleId IdType="pmc">PMC10454508</ArticleId>
+            <ArticleId IdType="pubmed">37628848</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Raissi-Dehkordi N, Raissi-Dehkordi N, Ebrahimibagha H, Tayebi T, Moeinabadi-Bidgoli K, Hassani M, et al. Advancing chronic and acute wound healing with cold atmospheric plasma: cellular and molecular mechanisms, benefits, risks, and future directions. Front Med. 2025;12:1527736. 10.3389/fmed.2025.1527736.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3389/fmed.2025.1527736</ArticleId>
+            <ArticleId IdType="pmc">PMC11907477</ArticleId>
+            <ArticleId IdType="pubmed">40093019</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Amaroli A, Pasquale C, Zekiy A, Utyuzh A, Benedicenti S, Signore A, et al. Photobiomodulation and oxidative stress: 980 nm diode laser light regulates mitochondrial activity and reactive oxygen species production. Oxid Med Cell Longev. 2021;2021:6626286. 10.1155/2021/6626286.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1155/2021/6626286</ArticleId>
+            <ArticleId IdType="pmc">PMC7952159</ArticleId>
+            <ArticleId IdType="pubmed">33763170</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cavalcanti MFXB, Cabette RA, Moraes AC, Diomede F, Trubiani O, Maria DA. The effects in vitro of photobiomodulation over fibroblasts and extracellular matrix. Photobiomodul Photomed Laser Surg. 2024;42:140–7. 10.1089/photob.2023.0123.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1089/photob.2023.0123</ArticleId>
+            <ArticleId IdType="pubmed">38393824</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>George S, Hamblin MR, Abrahamse H. Effect of red light and near infrared laser on the generation of reactive oxygen species in primary dermal fibroblasts. J Photochem Photobiol B. 2018;188:60–8. 10.1016/j.jphotobiol.2018.09.004.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.jphotobiol.2018.09.004</ArticleId>
+            <ArticleId IdType="pmc">PMC6214457</ArticleId>
+            <ArticleId IdType="pubmed">30216761</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Hormozi-Moghaddam Z, Mokhtari-Dizaji M, Nilforoshzade MA, Bakhshande M, Zare S. High-resolution ultrasound imaging for non-invasive characterization of acute wound healing in radiation injury on guinea pig skin tissue. Front Biomed Technol. 2024;11:104–12. 10.18502/fbt.v11i1.14517.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.18502/fbt.v11i1.14517</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Mantri Y, Tsujimoto J, Penny WF, Garimella PS, Anderson CA, Jokerst JV. Point-of-care ultrasound as a tool to assess wound size and tissue regeneration after skin grafting. Ultrasound Med Biol. 2021;47:2550–9. 10.1016/j.ultrasmedbio.2021.05.016.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1016/j.ultrasmedbio.2021.05.016</ArticleId>
+            <ArticleId IdType="pmc">PMC10041823</ArticleId>
+            <ArticleId IdType="pubmed">34210560</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Russo A, Patanè V, Bucciero L, Pezzella MC, Brunese M, Stanzione F, et al. High-frequency ultrasound evaluation of cutaneous surgical wound healing: an outpatient experience. Wound Repair Regen. 2026;34. 10.1111/wrr.70136.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1111/wrr.70136</ArticleId>
+            <ArticleId IdType="pmc">PMC12949109</ArticleId>
+            <ArticleId IdType="pubmed">41761379</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Gnyawali SC, Sinha M, El Masry MS, Wulff B, Ghatak S, Soto-Gonzalez F, et al. High resolution ultrasound imaging for repeated measure of wound tissue morphometry, biomechanics and hemodynamics under fetal, adult and diabetic conditions. PLoS ONE. 2020;15. 10.1371/journal.pone.0241831.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1371/journal.pone.0241831</ArticleId>
+            <ArticleId IdType="pmc">PMC7682876</ArticleId>
+            <ArticleId IdType="pubmed">33227015</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Lin Y-H, Chen Y-C, Cheng K-S, Yu P-J, Wang J-L, Ko N-Y. Higher periwound temperature associated with wound healing of pressure ulcers detected by infrared thermography. J Clin Med. 2021;10:2883. 10.3390/jcm10132883.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/jcm10132883</ArticleId>
+            <ArticleId IdType="pmc">PMC8269037</ArticleId>
+            <ArticleId IdType="pubmed">34209633</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ramirez-GarciaLuna JL, Bartlett R, Arriaga-Caballero JE, Fraser RDJ, Saiko G. Infrared thermography in wound care, surgery, and sports medicine: a review. Front Physiol. 2022;13:838528. 10.3389/fphys.2022.838528.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3389/fphys.2022.838528</ArticleId>
+            <ArticleId IdType="pmc">PMC8928271</ArticleId>
+            <ArticleId IdType="pubmed">35309080</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Siah C-JR, Childs C, Chia CK, Cheng KFK. An observational study of temperature and thermal images of surgical wounds for detecting delayed wound healing within four days after surgery. J Clin Nurs. 2019;28:2285–95. 10.1111/jocn.14832.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1111/jocn.14832</ArticleId>
+            <ArticleId IdType="pubmed">30791157</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Huang J, Fan C, Ma Y, Huang G. Exploring thermal dynamics in wound healing: the impact of temperature and microenvironment. Clin Cosmet Investig Dermatol. 2024;17:1251–8. 10.2147/ccid.s468396.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.2147/ccid.s468396</ArticleId>
+            <ArticleId IdType="pmc">PMC11144001</ArticleId>
+            <ArticleId IdType="pubmed">38827629</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Schultz GS, Chin GA, Moldawer L, Diegelmann RF. Principles of wound healing. Adelaide: University of Adelaide; 2011.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1017/UPO9781922064004.024</ArticleId>
+            <ArticleId IdType="pubmed">30485016</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Guo L, Yang L, Qi Y, Niyazi G, Huang L, Gou L, et al. Cold atmospheric-pressure plasma caused protein damage in methicillin-resistant Staphylococcus aureus cells in biofilms. Microorganisms. 2021;9:1072. 10.3390/microorganisms9051072.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.3390/microorganisms9051072</ArticleId>
+            <ArticleId IdType="pmc">PMC8156483</ArticleId>
+            <ArticleId IdType="pubmed">34067642</ArticleId>
+          </ArticleIdList>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+</PubmedArticleSet>
