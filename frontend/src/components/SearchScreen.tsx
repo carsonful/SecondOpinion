@@ -4,6 +4,7 @@ import { ClaimCandidates, VerdictData } from '../types'
 import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
 import VerdictResult from './result/VerdictResult'
 import CandidateResults from './result/CandidateResults'
+import LoadingTips from './LoadingTips'
 import './SearchScreen.css'
 
 const CAP_COLORS = [
@@ -125,7 +126,7 @@ export default function SearchScreen({
               <span className="search__spinner" aria-hidden="true" />
               <div>
                 <p className="search__status-title">Checking “{claim}”</p>
-                <p className="search__status-sub">Preparing your result…</p>
+                <LoadingTips />
               </div>
             </div>
           )}
