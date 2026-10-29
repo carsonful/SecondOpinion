@@ -1,0 +1,31 @@
+[
+ {"bioctype": "BioCCollection", "source": "PMC", "documents": [
+  {"bioctype": "BioCDocument", "id": "PMC7356429", "passages": [
+   {"infons": {"section_type": "TITLE", "type": "front", "article-id_pmid": "32342851", "article-id_pmc": "PMC7356429", "license": "This is an open-access article distributed under the terms of the Creative Commons Attribution (CC-BY) License, which permits unrestricted use, distribution, and reproduction in any medium, provided the original author and source are credited."}, "text": "Zinc Supplementation Reduces Common Cold Duration among Healthy Adults: A Systematic Review of Randomized Controlled Trials with Micronutrients Supplementation"},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract_title_1"}, "text": "Abstract."},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "The common cold had resulted in significant economic and social burden worldwide. The effect of vitamin C on preventing common cold in healthy adults has been investigated extensively, but not that of other micronutrients. Thus, we aim to a"},
+   {"infons": {"section_type": "INTRO", "type": "title_1"}, "text": "INTRODUCTION"},
+   {"infons": {"section_type": "INTRO", "type": "paragraph"}, "text": "The common cold is characterized by acute inflammation of the nose, sinuses, pharynx, and larynx mainly due to viral infection. Cold episodes are usually mild and do not progress to serious health problems, such as pneumonia or bacterial in"},
+   {"infons": {"section_type": "METHODS", "type": "title_1"}, "text": "MATERIALS AND METHODS"},
+   {"infons": {"section_type": "METHODS", "type": "title_2"}, "text": "Literature search and study selection."},
+   {"infons": {"section_type": "METHODS", "type": "paragraph"}, "text": "The systematic search methods were carried out in accordance with the relevant guidelines and regulations in the preferred reporting items for systematic reviews and meta-analyses (PRISMA) guidelines in this systematic review. For each micr"},
+   {"infons": {"section_type": "TABLE", "type": "table_caption"}, "text": "Description of PICOS criteria for a systematic review assessing the effects of micronutrients supplementation or administration on the prevention and management of common cold and pneumonia"},
+   {"infons": {"section_type": "TABLE", "type": "table"}, "text": "Variable\tDescription\t \tPopulation\tPrevention: healthy individuals aged between 18 and 65 years\t \tManagement: individuals aged between 18 and 65 years, infected with common cold or pneumonia\t \tOral administration or supplementation of a sing"},
+   {"infons": {"section_type": "TABLE", "type": "table_footnote"}, "text": "PICOS = population, intervention, comparator, outcome, study design."},
+   {"infons": {"section_type": "RESULTS", "type": "title_1"}, "text": "RESULTS"},
+   {"infons": {"section_type": "RESULTS", "type": "title_2"}, "text": "Screening results."},
+   {"infons": {"section_type": "RESULTS", "type": "paragraph"}, "text": "After the removal of duplicates within each micronutrient, the titles and abstracts of 660 unique studies identified through our literature search were screened, and full texts of 56 potential studies were further assessed for eligibility. "},
+   {"infons": {"section_type": "FIG", "type": "fig_caption"}, "text": "PRISMA flow diagram for study selection."},
+   {"infons": {"section_type": "RESULTS", "type": "title_3"}, "text": "All micronutrients:"},
+   {"infons": {"section_type": "DISCUSS", "type": "title_1"}, "text": "DISCUSSION"},
+   {"infons": {"section_type": "DISCUSS", "type": "paragraph"}, "text": "Overall, micronutrients show promise in shortening cold duration, but may not be as effective in preventing colds in a healthy adult population. The efficacy of micronutrients in managing cold severity remains inconclusive, and further anal"},
+   {"infons": {"section_type": "DISCUSS", "type": "title_2"}, "text": "Prevention of cold and pneumonia."},
+   {"infons": {"section_type": "DISCUSS", "type": "title_3"}, "text": "Vitamin D"},
+   {"infons": {"section_type": "CONCL", "type": "title_1"}, "text": "CONCLUSION"},
+   {"infons": {"section_type": "CONCL", "type": "paragraph"}, "text": "Overall, the results suggest that micronutrients other than vitamin C may have limited effects on cold prevention among healthy adults, but zinc shows potential reduction of cold duration."},
+   {"infons": {"section_type": "SUPPL", "type": "title_1"}, "text": "Supplemental tables"},
+   {"infons": {"section_type": "REF", "type": "title"}, "text": "REFERENCES"},
+   {"infons": {"section_type": "REF", "type": "ref"}, "text": "Prevention and treatment of the common cold: making sense of the evidence"}
+  ]}
+ ]}
+]

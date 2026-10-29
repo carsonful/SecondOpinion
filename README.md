@@ -41,7 +41,9 @@ Copy `backend/.env.example` to `backend/.env` and configure the services you use
 | `CORS_ORIGINS` | Allowed frontend origins as a JSON array; defaults to `["http://localhost:5173"]`. |
 
 Uncached claim normalization requires the three Azure settings. PostgreSQL is
-optional for claim search.
+optional for claim search. When the saved examples database is not configured or
+cannot be reached, the backend still starts and the example buttons run a live
+search instead.
 Restart the backend after changing settings. See `.env.example` for cache options.
 
 ### Frontend

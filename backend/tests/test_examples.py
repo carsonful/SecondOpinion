@@ -45,3 +45,13 @@ def test_examples_are_read_from_postgres_without_live_services(monkeypatch):
             )
         assert client.get("/api/examples/raw-milk").json()["tag"] == "Read from PostgreSQL"
         assert client.get("/api/examples/unknown").status_code == 404
+
+
+def test_app_still_starts_and_reports_503_when_the_examples_database_is_down(monkeypatch):
+    # Nothing listens on port 1, so every connection is refused straight away.
+    settings = Settings(_env_file=None, database_url="postgresql://user:pass@127.0.0.1:1/examples")
+    monkeypatch.setattr(example_service, "get_settings", lambda: settings)
+
+    with TestClient(app) as client:
+        assert client.get("/api/health").status_code == 200
+        assert client.get("/api/examples/raw-milk").status_code == 503

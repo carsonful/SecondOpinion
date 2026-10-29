@@ -5,8 +5,7 @@ import { hydrateExample } from '../data/hydrateExample'
 
 export type Status = 'idle' | 'loading' | 'error' | 'success'
 
-function requestError(status: number, isExample: boolean): string {
-  if (isExample) return 'This saved example is unavailable right now. Try again in a moment.'
+function requestError(status: number): string {
   if (status === 422) return 'Enter one clear health claim of up to 2,000 characters.'
   if (status === 503) return 'An evidence service is unavailable. Try again shortly.'
   return 'Something went wrong on our end. Try again in a moment.'
@@ -35,18 +34,35 @@ export function useClaimChecker() {
     const example = EXAMPLE_CLAIMS.find(({ claim }) => claim.toLowerCase() === trimmed.toLowerCase())
 
     try {
-      const res = example
-        ? await fetch(`/api/examples/${example.slug}`)
-        : await fetch(`/api/claims${refresh ? '?refresh=true' : ''}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ claim: trimmed }),
-          })
+      // Saved examples come from Postgres. If they can't be loaded for any reason,
+      // fall through to a live search so the example buttons always work.
+      if (example && !refresh) {
+        try {
+          const saved = await fetch(`/api/examples/${example.slug}`)
+          if (currentRequest !== requestId.current) return
+          if (saved.ok) {
+            const data = await saved.json()
+            if (currentRequest !== requestId.current) return
+            setStatus('success')
+            setActiveClaim(trimmed)
+            setVerdict(hydrateExample(data))
+            return
+          }
+        } catch {
+          // Fall through to the live search below.
+        }
+      }
+
+      const res = await fetch(`/api/claims${refresh ? '?refresh=true' : ''}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim: trimmed }),
+      })
 
       if (currentRequest !== requestId.current) return
 
       if (!res.ok) {
-        setErrorMessage(requestError(res.status, Boolean(example)))
+        setErrorMessage(requestError(res.status))
         setStatus('error')
         return
       }
@@ -55,8 +71,7 @@ export function useClaimChecker() {
       if (currentRequest !== requestId.current) return
       setStatus('success')
       setActiveClaim(trimmed)
-      if (example) setVerdict(hydrateExample(data))
-      else setCandidates(data)
+      setCandidates(data)
     } catch {
       if (currentRequest !== requestId.current) return
       setErrorMessage("Can't reach the server right now.")

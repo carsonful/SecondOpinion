@@ -7,6 +7,9 @@ from psycopg.types.json import Jsonb
 from app.config import get_settings
 from app.models.examples import ExampleResult
 
+# Fail fast when the database is down so callers can fall back to a live search.
+CONNECT_TIMEOUT = 3
+
 
 def initialize_examples() -> None:
     database_url = get_settings().database_url
@@ -15,7 +18,7 @@ def initialize_examples() -> None:
 
     path = Path(__file__).resolve().parents[1] / "data" / "example_results.json"
     examples = json.loads(path.read_text(encoding="utf-8"))
-    with psycopg.connect(database_url.get_secret_value()) as connection:
+    with psycopg.connect(database_url.get_secret_value(), connect_timeout=CONNECT_TIMEOUT) as connection:
         connection.execute(
             "CREATE TABLE IF NOT EXISTS example_results "
             "(slug TEXT PRIMARY KEY, result JSONB NOT NULL)"
@@ -34,7 +37,7 @@ def get_example(slug: str) -> ExampleResult | None:
     if database_url is None:
         raise RuntimeError("DATABASE_URL is not configured")
 
-    with psycopg.connect(database_url.get_secret_value()) as connection:
+    with psycopg.connect(database_url.get_secret_value(), connect_timeout=CONNECT_TIMEOUT) as connection:
         row = connection.execute(
             "SELECT result FROM example_results WHERE slug = %s", (slug,)
         ).fetchone()

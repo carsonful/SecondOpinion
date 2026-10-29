@@ -28,6 +28,13 @@ text, abstract-only records, and citation-only records. Each candidate contains:
 - `metadata`: study design label.
 - `access`: `level` (`full_text`, `abstract_only`, or `metadata_only`), reason,
   detail, PMC ID/link, license, and retrieved body section names.
+- `integrity`: retraction, correction, and expression-of-concern notices from
+  Crossref and PubMed, with a `status` (`expression_of_concern`, `corrected`,
+  `no_notice_found`, or `unchecked`), a label, and notice links.
+
+Retracted studies are not included in `candidates` or `coverage`. They are
+listed in `excluded_retracted`, with their retraction notices, so a client can
+say what was removed.
 
 The UI uses a color and letter beside the study type as a quick identifier.
 These marks describe design categories, not quality. See the [study type key](study-guide.md).

@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.models.crossref import IntegrityNotice
 from app.models.normalization import NormalizedClaim
 from app.models.metadata import StudyMetadata
 from app.models.full_text import EvidenceCoverage, FullTextAccess
@@ -31,10 +32,23 @@ class ClaimRequest(BaseModel):
         return value.strip()
 
 
+class CandidateIntegrity(BaseModel):
+    """Retraction, correction, and concern notices for one study, from Crossref and PubMed.
+
+    A notice is a fact about the paper, not a grade. Retracted studies are left out
+    of `candidates` and listed in `excluded_retracted` instead.
+    """
+
+    status: Literal["retracted", "expression_of_concern", "corrected", "no_notice_found", "unchecked"]
+    label: str
+    notices: list[IntegrityNotice]
+
+
 class CandidateStudy(BaseModel):
     article: PubMedArticle
     metadata: StudyMetadata
     access: FullTextAccess
+    integrity: CandidateIntegrity
 
 
 class ClaimCandidates(BaseModel):
@@ -51,4 +65,8 @@ class ClaimCandidates(BaseModel):
     # PubMed relevance order, after deduplication. Not a quality ranking.
     candidates: list[CandidateStudy] = Field(
         description="Deduplicated studies in PubMed relevance order, with study-design metadata and full-text access details. No grades, scores, or verdicts are assigned.",
+    )
+    excluded_retracted: list[CandidateStudy] = Field(
+        default_factory=list,
+        description="Studies left out of candidates because Crossref or PubMed reports them retracted, with their notices.",
     )
