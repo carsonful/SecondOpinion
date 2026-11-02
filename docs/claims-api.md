@@ -123,7 +123,7 @@ verdict examples use `DATABASE_URL` separately. The local Vite server proxies
 `/api` to port 8000. A hosted
 frontend needs `/api` routed to the backend and its origin in `CORS_ORIGINS`.
 
-## Automatic abstract overview
+## Automatic research overview
 
 Each candidate's `metadata` includes `design` and `population` (`human`, `animal`,
 `in_vitro`, or `unknown`). Population comes from explicit MeSH descriptors, not the
@@ -135,11 +135,11 @@ descriptor list and limitations. The same field is returned on excluded studies.
 Persistent claim-cache format v3 invalidates pre-population entries. Restart the
 backend on deployment to clear older in-memory snapshots/results. Older manual
 JSON payloads without population remain readable with `unknown`; to obtain an
-indexed label, refresh the search. Overview version `abstract-overview-v3-population`
+indexed label, refresh the search. Overview version `source-overview-v4-full-text`
 also invalidates prior readings and syntheses. Both reading and synthesis prompts
 receive population metadata and must not generalize animal/lab findings to people.
 
-`POST /api/claims` additionally returns `analysis_id`, an opaque, temporary identifier
+`POST /api/claims` additionally returns `pmc_only` and `analysis_id`, an opaque, temporary identifier
 for the server's exact search snapshot. The live results page calls
 `POST /api/claims/overview/{analysis_id}` automatically, without resubmitting source text.
 Unknown or expired IDs return 410; overall timeouts return 503. Snapshots last one hour
@@ -160,7 +160,7 @@ search snapshot or its papers. A partial model/provider failure can instead be
 represented in a successful overview body with `partial` or `unavailable` status;
 it is distinct from the route's overall timeout response.
 
-The overview returns `basis: "abstracts"`, `status` (`complete`, `partial`,
+The overview returns `basis` (`"abstracts"`, `"full_text"`, or `"mixed"`), `status` (`complete`, `partial`,
 `unavailable`, or `insufficient_information`), `coverage`, `studies`, `synthesis`,
 and `cached`. `complete` means analysis completed for eligible sources, not that the
 search covers all relevant research. Per-study statuses are `analyzed`, `no_abstract`,
@@ -173,12 +173,21 @@ to successfully analyzed sources. Coverage counts are computed in code. No-abstr
 withheld, failed, and outside-limit records are not included in the synthesis.
 Retractions remain in the search response's `excluded_retracted` list. Corrections
 and expressions of concern are withheld pending resolution. Only the first 20
-retained papers are considered for analysis. Full text is not used in this version.
+retained papers are considered for analysis. With `pmc_only: true`, verified PMC
+body text is analyzed instead of the abstract. Text beyond 120,000 characters or
+unavailable text falls back to the abstract with an explicit `source_note`.
+Abstracts beyond 30,000 characters are not analyzed. Text is never silently truncated.
+Each reading reports `source_basis` (`full_text`, `abstract`, or null when no source
+was selected). Coverage includes `full_text` and `abstracts` counts of successful
+readings. Quoted passages must occur verbatim in the selected source. Full article
+bodies stay in server-side snapshots, not API or PostgreSQL payloads. Cached PMC
+access metadata is rehydrated with verified documents before analysis. Cache keys
+include search mode and source contents; broad searches always analyze abstracts.
 Partial failures are not cached as finished overviews; successful readings can be
 reused on retry. Concurrent overview requests share the same work.
 
 ### Search scope
 
-`POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; research overviews remain abstract-based. Cache entries are separated by the actual search query.
+`POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; overviews use full text in PMC-only mode and abstracts in broader mode. Cache entries are separated by the actual search query.
 
 The search-page information button explains the coverage and retrieval-time tradeoff. Example buttons run a live search with the selected scope instead of loading a saved verdict that may have a different scope. Refresh retains the scope of the displayed search.

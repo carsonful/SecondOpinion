@@ -17,9 +17,10 @@ from app.models.overview import (
 from app.services.cache import TTLCache
 
 logger = logging.getLogger(__name__)
-VERSION = "abstract-overview-v3-population"
+VERSION = "source-overview-v4-full-text"
 MAX_STUDIES = 20
 MAX_ABSTRACT_CHARS = 30000
+MAX_FULL_TEXT_CHARS = 120000
 snapshots: TTLCache[str, ClaimCandidates] = TTLCache(3600, 128)
 completed: TTLCache[str, ResearchOverview] = TTLCache(6 * 3600, 128)
 read_cache: TTLCache[str, StudyExplanation] = TTLCache(6 * 3600, 2048)
@@ -92,7 +93,10 @@ def register_snapshot(result: ClaimCandidates) -> str:
 def cache_key(result: ClaimCandidates) -> str:
     # Exact claim, source content, design, integrity and order all affect interpretation.
     content = {"version": VERSION, "claim": result.claim,
-               "studies": [c.model_dump(mode="json") for c in result.candidates],
+               "pmc_only": result.pmc_only,
+               "studies": [{"study": c.model_dump(mode="json"),
+                            "document": c._document.model_dump(mode="json") if result.pmc_only and c._document else None}
+                           for c in result.candidates],
                "excluded": [c.model_dump(mode="json") for c in result.excluded_retracted]}
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
@@ -130,7 +134,7 @@ async def generate(client: httpx.AsyncClient, schema: type[T], prompt: str, data
         return schema.model_validate_json(choice["message"]["content"])
     except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError):
         # Never expose upstream response bodies or credentials.
-        raise OverviewUnavailable("Could not generate a validated abstract explanation") from None
+        raise OverviewUnavailable("Could not generate a validated source explanation") from None
 
 
 async def build_overview(result: ClaimCandidates) -> ResearchOverview:
@@ -145,39 +149,60 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
             if article.retracted or candidate.integrity.status in ("retracted", "expression_of_concern", "corrected"):
                 return StudyReading(pmid=article.pmid, status="withheld",
                                     reason="An integrity notice needs resolution before these findings can inform the overview.")
-            if not article.abstract or not article.abstract.strip():
-                return StudyReading(pmid=article.pmid, status="no_abstract", reason="No PubMed abstract is available.")
             if index >= MAX_STUDIES:
                 return StudyReading(pmid=article.pmid, status="outside_limit", reason="The overview covers the first 20 retrieved papers.")
-            if len(article.abstract) > MAX_ABSTRACT_CHARS:
+            source = article.abstract or ""
+            basis = "abstract"
+            source_note = None
+            if result.pmc_only:
+                document = candidate._document
+                body = "\n\n".join(section.text for section in document.sections) if document else ""
+                if document and document.pmc_id == article.pmc_id and document.pmid == article.pmid and body.strip() and len(body) <= MAX_FULL_TEXT_CHARS:
+                    source = body
+                    basis = "full_text"
+                else:
+                    source_note = (
+                        "Full text exceeds the supported analysis length; this explanation uses the abstract."
+                        if len(body) > MAX_FULL_TEXT_CHARS else
+                        "Verified full text was unavailable for analysis; this explanation uses the abstract."
+                    )
+            if not source.strip():
+                return StudyReading(pmid=article.pmid, status="no_abstract", reason="No usable full text or PubMed abstract is available." if result.pmc_only else "No PubMed abstract is available.")
+            if basis == "abstract" and len(source) > MAX_ABSTRACT_CHARS:
                 return StudyReading(pmid=article.pmid, status="failed", reason="This abstract exceeds the supported reading length.")
+            reading_meta = {"source_basis": basis, "source_note": source_note}
             reading_key = hashlib.sha256(json.dumps({
                 "version": VERSION, "claim": result.claim, "study": candidate.model_dump(mode="json"),
+                "source": source, "basis": basis,
             }, sort_keys=True).encode()).hexdigest()
             prior = read_cache.get(reading_key)
             if prior is not None:
-                return StudyReading(pmid=article.pmid, status="analyzed", explanation=prior)
+                return StudyReading(pmid=article.pmid, status="analyzed", explanation=prior, **reading_meta)
             try:
                 async with semaphore:
                     async with asyncio.timeout(40):
-                        explanation = await generate(client, StudyExplanation, READ_PROMPT, {
-                            "claim": result.claim, "title": article.title, "abstract": article.abstract,
+                        prompt = READ_PROMPT if basis == "abstract" else READ_PROMPT.replace("abstract", "retrieved full-text body")
+                        explanation = await generate(client, StudyExplanation, prompt, {
+                            "claim": result.claim, "title": article.title,
+                            ("full_text" if basis == "full_text" else "abstract"): source,
                             "design": candidate.metadata.design,
                             "population": candidate.metadata.population,
                         })
                 for statement in (explanation.summary, explanation.relationship):
-                    if statement.passage not in article.abstract:
+                    if not statement.passage.strip() or statement.passage not in source:
                         raise OverviewUnavailable("Unverified source passage")
                 read_cache.set(reading_key, explanation)
-                return StudyReading(pmid=article.pmid, status="analyzed", explanation=explanation)
+                return StudyReading(pmid=article.pmid, status="analyzed", explanation=explanation, **reading_meta)
             except (OverviewUnavailable, TimeoutError) as exc:
-                logger.info("abstract reading unavailable pmid=%s reason=%s", article.pmid, type(exc).__name__)
-                return StudyReading(pmid=article.pmid, status="failed", reason="The abstract explanation could not be verified. Retry the overview.")
+                logger.info("source reading unavailable pmid=%s reason=%s", article.pmid, type(exc).__name__)
+                return StudyReading(pmid=article.pmid, status="failed", reason="The source explanation could not be verified. Retry the overview.", **reading_meta)
 
         readings = await asyncio.gather(*(read(i, c) for i, c in enumerate(result.candidates)))
         analyzed = [r for r in readings if r.explanation is not None]
         coverage = OverviewCoverage(
             retrieved=len(readings), analyzed=len(analyzed),
+            full_text=sum(r.source_basis == "full_text" for r in analyzed),
+            abstracts=sum(r.source_basis == "abstract" for r in analyzed),
             **{k: sum(r.explanation.relevance == k for r in analyzed)
                for k in ("direct", "related", "not_addressed", "unclear")},
             **{k: sum(r.status == k for r in readings)
@@ -189,7 +214,7 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
         if analyzed:
             try:
                 async with asyncio.timeout(45):
-                    synthesis = await generate(client, Synthesis, SYNTHESIS_PROMPT, {
+                    synthesis = await generate(client, Synthesis, SYNTHESIS_PROMPT.replace("abstracts", "source texts (full text or abstract, as labeled for each study)"), {
                         "claim": result.claim, "readings": [r.model_dump() for r in analyzed],
                         "integrity": {c.article.pmid: c.integrity.status for c in result.candidates
                                       if c.article.pmid in {r.pmid for r in analyzed}},
@@ -204,7 +229,8 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
             except (OverviewUnavailable, TimeoutError):
                 synthesis = None
                 status = "unavailable"
-        overview = ResearchOverview(status=status, coverage=coverage, studies=readings, synthesis=synthesis)
+        basis = "mixed" if coverage.full_text and coverage.abstracts else "full_text" if coverage.full_text else "abstracts"
+        overview = ResearchOverview(basis=basis, status=status, coverage=coverage, studies=readings, synthesis=synthesis)
         # Do not cache transient failures: retry can recover missing readings/synthesis.
         if status not in ("partial", "unavailable"):
             completed.set(key, overview)

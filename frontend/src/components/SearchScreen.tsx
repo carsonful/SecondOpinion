@@ -97,7 +97,7 @@ export default function SearchScreen({
             <div id={searchInfoId} hidden={!showSearchInfo} className="search__info-panel">
               <p><strong>On:</strong> Search only studies with full text in PubMed Central. Checking full text may take longer and can provide more detail, but this smaller collection may return few or no studies for your question.</p>
               <p><strong>Off:</strong> Search all of PubMed, including studies available only as abstracts or citations. You can view abstracts, study types, journal details, and source links.</p>
-              <p>The research overview uses abstracts in both modes. This choice applies to your next search.</p>
+              <p>With PMC only enabled, the overview analyzes retrieved full text when available and labels any abstract fallbacks. With it off, the overview uses abstracts. This choice applies to your next search.</p>
             </div>
           </div>
 
