@@ -150,8 +150,8 @@ Retracted papers are excluded; corrections and expressions of concern are withhe
 because their effect on findings has not been resolved. Unchecked records remain
 explicitly labeled. Missing abstracts are not inferred from titles.
 
-The server checks that quoted passages occur in the abstract and that every overview
-citation identifies an analyzed paper. These checks establish provenance, not semantic
+The model selects numbered source passages; the server inserts their original text
+and checks that every overview citation identifies an analyzed paper. These checks establish provenance, not semantic
 accuracy. Interpretations still need independent evaluation. No scores, treatment
 recommendations, or automatic truth verdicts are intended. Coverage describes this
 retrieved set, not how extensively a topic has been researched overall.
@@ -163,5 +163,8 @@ overview caches are bounded and in-process, so this first version requires a sin
 backend worker or sticky routing. Shared snapshot storage is needed before using
 multiple interchangeable workers. Cache keys include exact claim, source content,
 integrity, and analysis version; the shared PubMed query cache is not used for synthesis.
-A fresh overview can take several minutes, with a 240-second server timeout. Existing
-saved-example pages and their curated verdicts are unchanged.
+A fresh overview can take several minutes. The reading phase allows 240 seconds,
+then preserves completed work for synthesis within a 320-second overall budget.
+Transient failures are retried; failed full-text readings can fall back to clearly
+labeled abstracts. The search examples use the selected PMC-only or broader PubMed
+mode. See [analysis recovery](docs/claims-api.md#analysis-recovery) for limits.

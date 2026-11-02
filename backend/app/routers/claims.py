@@ -11,7 +11,7 @@ from app.services.claims import ClaimsCache, retrieve_candidates
 from app.services.normalization import ClaimNormalizationError, FoundryUnavailableError
 
 from app.models.overview import ResearchOverview
-from app.services.research_overview import register_snapshot, snapshots, shared_overview
+from app.services.research_overview import register_snapshot, snapshots, shared_overview, OVERVIEW_TIMEOUT
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 
@@ -66,7 +66,7 @@ async def research_overview(analysis_id: str) -> ResearchOverview:
     if snapshot is None:
         raise HTTPException(status_code=410, detail="Search snapshot expired. Refresh the search.")
     try:
-        async with asyncio.timeout(240):
+        async with asyncio.timeout(OVERVIEW_TIMEOUT + 5):
             return await shared_overview(snapshot)
     except TimeoutError:
         raise HTTPException(status_code=503, detail="Overview took too long. Retry; your studies are still available.") from None

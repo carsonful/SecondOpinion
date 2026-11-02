@@ -17,10 +17,15 @@ from app.models.overview import (
 from app.services.cache import TTLCache
 
 logger = logging.getLogger(__name__)
-VERSION = "source-overview-v4-full-text"
+VERSION = "source-overview-v5-recovery"
 MAX_STUDIES = 20
 MAX_ABSTRACT_CHARS = 30000
 MAX_FULL_TEXT_CHARS = 120000
+READ_TIMEOUT = 75
+READING_PHASE_TIMEOUT = 240
+OVERVIEW_TIMEOUT = 320
+PROVIDER_ATTEMPTS = 3
+RETRY_DELAYS = (2, 4)
 snapshots: TTLCache[str, ClaimCandidates] = TTLCache(3600, 128)
 completed: TTLCache[str, ResearchOverview] = TTLCache(6 * 3600, 128)
 read_cache: TTLCache[str, StudyExplanation] = TTLCache(6 * 3600, 2048)
@@ -42,15 +47,15 @@ preserve the actual population reported in the abstract. Do not extrapolate
 animal or laboratory findings to people. Association does not show causation;
 a nonsignificant result does not prove no effect. Reviews synthesize research,
 not new participant trials. Missing results must be explicitly acknowledged.
-For both summary and relationship supply a contiguous verbatim passage from the
-abstract supporting the explanation; do not combine quotations. List important
+The source is divided into numbered passages. For both summary and relationship,
+put ONLY the supporting passage ID (for example P12) in the passage field.
+The application inserts the original text. Never invent IDs or copy a quotation. List important
 information gaps with wording such as 'not reported in the abstract', without
 implying a defect in the study. Do not grade quality, give medical advice, assign
 confidence scores or decide whether the claim is true. Return concise plain English. Summary: at most two short sentences focused only
 on the claim, not every treatment in a broad review. Relationship: one short
 sentence. Gaps: at most three important gaps, not an exhaustive checklist.
-Passages: select the shortest exact source text that supports the explanation,
-preferably one or two sentences. Do not repeat treatment recommendations, dosing
+Select the numbered passage that best supports each explanation. Do not repeat treatment recommendations, dosing
 instructions, or statements about unrelated treatments. A broad review merely
 mentioning the topic without reporting relevant findings is related, not direct.
 """
@@ -81,7 +86,51 @@ measured language understandable without reading the underlying papers.
 
 
 class OverviewUnavailable(RuntimeError):
-    pass
+    def __init__(self, message: str, *, code: str = "invalid_response", retry_after: float = 0):
+        super().__init__(message)
+        self.code = code
+        self.retry_after = retry_after
+
+
+FAILURE_REASONS = {
+    "rate_limited": "The analysis service is rate-limiting requests.",
+    "timeout": "The analysis service took too long to respond.",
+    "provider_unavailable": "The analysis service is temporarily unavailable.",
+    "request_rejected": "The analysis service rejected this request.",
+    "invalid_response": "The analysis service returned an incomplete or invalid explanation.",
+    "unverified_passage": "The explanation's quotations could not be matched to the source.",
+    "configuration": "The analysis service is not configured correctly.",
+}
+
+
+def numbered_passages(source: str) -> dict[str, str]:
+    """Contiguous excerpts let the model cite IDs instead of retyping quotations."""
+    passages = {}
+    start = 0
+    while start < len(source):
+        end = min(start + 1500, len(source))
+        if end < len(source):
+            # Prefer a sentence boundary without discarding any source text.
+            boundary = source.rfind(". ", start + 500, end)
+            if boundary >= 0:
+                end = boundary + 1
+            else:
+                boundary = source.rfind(" ", start, end)
+                if boundary > start:
+                    end = boundary
+        text = source[start:end].strip()
+        if text:
+            passages[f"P{len(passages) + 1}"] = text
+        start = end
+    return passages
+
+
+def resolve_passages(explanation: StudyExplanation, passages: dict[str, str]) -> None:
+    for statement in (explanation.summary, explanation.relationship):
+        passage_id = statement.passage.strip().strip("[]")
+        if passage_id not in passages:
+            raise OverviewUnavailable("Unknown source passage", code="unverified_passage")
+        statement.passage = passages[passage_id]
 
 
 def register_snapshot(result: ClaimCandidates) -> str:
@@ -104,16 +153,16 @@ def cache_key(result: ClaimCandidates) -> str:
 T = TypeVar("T", bound=BaseModel)
 
 
-async def generate(client: httpx.AsyncClient, schema: type[T], prompt: str, data: dict) -> T:
+async def _generate_once(client: httpx.AsyncClient, schema: type[T], prompt: str, data: dict) -> T:
     settings = get_settings()
     if not all((settings.azure_inference_endpoint, settings.azure_model_deployment_name,
                 settings.azure_inference_api_key)):
-        raise OverviewUnavailable("Azure inference is not configured")
+        raise OverviewUnavailable("Azure inference is not configured", code="configuration")
     try:
         url = httpx.URL(settings.azure_inference_endpoint.rstrip("/"))
         if (url.scheme != "https" or not url.host or url.query or url.fragment
                 or url.path not in ("", "/", "/openai/v1")):
-            raise ValueError("Invalid resource endpoint")
+            raise OverviewUnavailable("Invalid resource endpoint", code="configuration")
         endpoint = str(url).rstrip("/")
         if url.path != "/openai/v1":
             endpoint += "/openai/v1"
@@ -127,14 +176,47 @@ async def generate(client: httpx.AsyncClient, schema: type[T], prompt: str, data
                 "name": schema.__name__, "strict": True, "schema": schema.model_json_schema(),
             }},
         })
+        if response.status_code == 429:
+            try:
+                retry_after = max(0, float(response.headers.get("Retry-After", "0")))
+            except ValueError:
+                retry_after = 0
+            raise OverviewUnavailable("Analysis service rate limited", code="rate_limited", retry_after=retry_after)
+        if response.status_code in (401, 403):
+            raise OverviewUnavailable("Analysis service authentication failed", code="configuration")
+        if response.status_code >= 500:
+            raise OverviewUnavailable("Analysis service unavailable", code="provider_unavailable")
         response.raise_for_status()
         choice = response.json()["choices"][0]
         if choice["finish_reason"] != "stop" or choice["message"].get("refusal"):
             raise ValueError("Incomplete generation")
         return schema.model_validate_json(choice["message"]["content"])
-    except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError):
+    except httpx.TimeoutException:
+        raise OverviewUnavailable("Analysis request timed out", code="timeout") from None
+    except httpx.TransportError:
+        raise OverviewUnavailable("Analysis connection failed", code="provider_unavailable") from None
+    except httpx.HTTPStatusError:
+        raise OverviewUnavailable("Analysis request rejected", code="request_rejected") from None
+    except (ValueError, KeyError, IndexError, TypeError):
         # Never expose upstream response bodies or credentials.
         raise OverviewUnavailable("Could not generate a validated source explanation") from None
+
+
+async def generate(client: httpx.AsyncClient, schema: type[T], prompt: str, data: dict) -> T:
+    for attempt in range(PROVIDER_ATTEMPTS):
+        try:
+            return await _generate_once(client, schema, prompt, data)
+        except OverviewUnavailable as exc:
+            retryable = exc.code in {"rate_limited", "timeout", "provider_unavailable"}
+            if not retryable or attempt == PROVIDER_ATTEMPTS - 1:
+                raise
+            # Long provider cooldowns are surfaced, not retried early.
+            delay = max(RETRY_DELAYS[attempt], exc.retry_after)
+            if delay > 30:
+                raise
+            logger.info("analysis retry code=%s attempt=%s", exc.code, attempt + 1)
+            await asyncio.sleep(delay)
+    raise AssertionError("unreachable")
 
 
 async def build_overview(result: ClaimCandidates) -> ResearchOverview:
@@ -143,7 +225,7 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
     if cached is not None:
         return cached.model_copy(update={"cached": True})
     semaphore = asyncio.Semaphore(4)
-    async with httpx.AsyncClient(timeout=35) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         async def read(index, candidate):
             article = candidate.article
             if article.retracted or candidate.integrity.status in ("retracted", "expression_of_concern", "corrected"):
@@ -170,34 +252,80 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
                 return StudyReading(pmid=article.pmid, status="no_abstract", reason="No usable full text or PubMed abstract is available." if result.pmc_only else "No PubMed abstract is available.")
             if basis == "abstract" and len(source) > MAX_ABSTRACT_CHARS:
                 return StudyReading(pmid=article.pmid, status="failed", reason="This abstract exceeds the supported reading length.")
-            reading_meta = {"source_basis": basis, "source_note": source_note}
-            reading_key = hashlib.sha256(json.dumps({
-                "version": VERSION, "claim": result.claim, "study": candidate.model_dump(mode="json"),
-                "source": source, "basis": basis,
-            }, sort_keys=True).encode()).hexdigest()
-            prior = read_cache.get(reading_key)
-            if prior is not None:
-                return StudyReading(pmid=article.pmid, status="analyzed", explanation=prior, **reading_meta)
-            try:
+            async def explain(text, selected_basis):
+                reading_key = hashlib.sha256(json.dumps({
+                    "version": VERSION, "claim": result.claim, "study": candidate.model_dump(mode="json"),
+                    "source": text, "basis": selected_basis,
+                }, sort_keys=True).encode()).hexdigest()
+                prior = read_cache.get(reading_key)
+                if prior is not None:
+                    return prior
+                prompt = READ_PROMPT if selected_basis == "abstract" else READ_PROMPT.replace("abstract", "retrieved full-text body")
+                passages = numbered_passages(text)
+                supplied_text = "\n\n".join(f"[{key}] {value}" for key, value in passages.items())
                 async with semaphore:
-                    async with asyncio.timeout(40):
-                        prompt = READ_PROMPT if basis == "abstract" else READ_PROMPT.replace("abstract", "retrieved full-text body")
-                        explanation = await generate(client, StudyExplanation, prompt, {
-                            "claim": result.claim, "title": article.title,
-                            ("full_text" if basis == "full_text" else "abstract"): source,
-                            "design": candidate.metadata.design,
-                            "population": candidate.metadata.population,
-                        })
-                for statement in (explanation.summary, explanation.relationship):
-                    if not statement.passage.strip() or statement.passage not in source:
-                        raise OverviewUnavailable("Unverified source passage")
-                read_cache.set(reading_key, explanation)
-                return StudyReading(pmid=article.pmid, status="analyzed", explanation=explanation, **reading_meta)
-            except (OverviewUnavailable, TimeoutError) as exc:
-                logger.info("source reading unavailable pmid=%s reason=%s", article.pmid, type(exc).__name__)
-                return StudyReading(pmid=article.pmid, status="failed", reason="The source explanation could not be verified. Retry the overview.", **reading_meta)
+                    async with asyncio.timeout(READ_TIMEOUT):
+                        for attempt in range(2):
+                            try:
+                                explanation = await generate(client, StudyExplanation, prompt, {
+                                    "claim": result.claim, "title": article.title,
+                                    ("full_text" if selected_basis == "full_text" else "abstract"): supplied_text,
+                                    "design": candidate.metadata.design,
+                                    "population": candidate.metadata.population,
+                                })
+                                resolve_passages(explanation, passages)
+                                read_cache.set(reading_key, explanation)
+                                return explanation
+                            except OverviewUnavailable as exc:
+                                if attempt or exc.code not in {"unverified_passage", "invalid_response"}:
+                                    raise
+                                prompt += "\nThe previous response could not be verified. Return only a valid source passage ID in each passage field, such as P1. Follow the response schema."
+                raise AssertionError("unreachable")
 
-        readings = await asyncio.gather(*(read(i, c) for i, c in enumerate(result.candidates)))
+            try:
+                explanation = await explain(source, basis)
+                return StudyReading(pmid=article.pmid, status="analyzed", explanation=explanation,
+                                    source_basis=basis, source_note=source_note)
+            except (OverviewUnavailable, TimeoutError) as exc:
+                code = exc.code if isinstance(exc, OverviewUnavailable) else "timeout"
+                logger.info("source reading unavailable pmid=%s code=%s", article.pmid, code)
+                reason = FAILURE_REASONS[code]
+                # A full-text failure must not discard a usable abstract.
+                if basis == "full_text" and article.abstract and article.abstract.strip() and len(article.abstract) <= MAX_ABSTRACT_CHARS and code not in {"configuration", "rate_limited"}:
+                    try:
+                        explanation = await explain(article.abstract, "abstract")
+                        return StudyReading(
+                            pmid=article.pmid, status="analyzed", explanation=explanation,
+                            source_basis="abstract", source_note=f"Full-text analysis could not finish: {reason} This explanation uses the abstract instead.",
+                        )
+                    except (OverviewUnavailable, TimeoutError) as fallback_exc:
+                        fallback_code = fallback_exc.code if isinstance(fallback_exc, OverviewUnavailable) else "timeout"
+                        reason += " Abstract fallback: " + FAILURE_REASONS[fallback_code]
+                return StudyReading(pmid=article.pmid, status="failed", reason=reason + " Retry the overview to retry this study.",
+                                    source_basis=basis, source_note=source_note)
+
+        tasks = [asyncio.create_task(read(i, c)) for i, c in enumerate(result.candidates)]
+        try:
+            if tasks:
+                _, pending = await asyncio.wait(tasks, timeout=READING_PHASE_TIMEOUT)
+                for task in pending:
+                    task.cancel()
+            outcomes = await asyncio.gather(*tasks, return_exceptions=True)
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+        readings = []
+        for candidate, outcome in zip(result.candidates, outcomes):
+            if isinstance(outcome, asyncio.CancelledError):
+                readings.append(StudyReading(pmid=candidate.article.pmid, status="failed",
+                    reason="This study did not finish before the search analysis deadline. Retry the overview; completed studies are preserved."))
+            elif isinstance(outcome, BaseException):
+                raise outcome
+            else:
+                readings.append(outcome)
+
         analyzed = [r for r in readings if r.explanation is not None]
         coverage = OverviewCoverage(
             retrieved=len(readings), analyzed=len(analyzed),
@@ -213,7 +341,7 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
         status = "unavailable" if coverage.failed else "insufficient_information"
         if analyzed:
             try:
-                async with asyncio.timeout(45):
+                async with asyncio.timeout(65):
                     synthesis = await generate(client, Synthesis, SYNTHESIS_PROMPT.replace("abstracts", "source texts (full text or abstract, as labeled for each study)"), {
                         "claim": result.claim, "readings": [r.model_dump() for r in analyzed],
                         "integrity": {c.article.pmid: c.integrity.status for c in result.candidates
@@ -232,7 +360,7 @@ async def build_overview(result: ClaimCandidates) -> ResearchOverview:
         basis = "mixed" if coverage.full_text and coverage.abstracts else "full_text" if coverage.full_text else "abstracts"
         overview = ResearchOverview(basis=basis, status=status, coverage=coverage, studies=readings, synthesis=synthesis)
         # Do not cache transient failures: retry can recover missing readings/synthesis.
-        if status not in ("partial", "unavailable"):
+        if status not in ("partial", "unavailable") and not any(r.source_note and "could not finish" in r.source_note for r in readings):
             completed.set(key, overview)
         return overview
 
@@ -243,7 +371,7 @@ async def shared_overview(result: ClaimCandidates) -> ResearchOverview:
     task = inflight.get(key)
     if task is None:
         async def bounded():
-            async with asyncio.timeout(240):
+            async with asyncio.timeout(OVERVIEW_TIMEOUT):
                 return await build_overview(result)
         task = asyncio.create_task(bounded())
         inflight[key] = task

@@ -135,7 +135,7 @@ descriptor list and limitations. The same field is returned on excluded studies.
 Persistent claim-cache format v3 invalidates pre-population entries. Restart the
 backend on deployment to clear older in-memory snapshots/results. Older manual
 JSON payloads without population remain readable with `unknown`; to obtain an
-indexed label, refresh the search. Overview version `source-overview-v4-full-text`
+indexed label, refresh the search. Overview version `source-overview-v5-recovery`
 also invalidates prior readings and syntheses. Both reading and synthesis prompts
 receive population metadata and must not generalize animal/lab findings to people.
 
@@ -179,12 +179,40 @@ unavailable text falls back to the abstract with an explicit `source_note`.
 Abstracts beyond 30,000 characters are not analyzed. Text is never silently truncated.
 Each reading reports `source_basis` (`full_text`, `abstract`, or null when no source
 was selected). Coverage includes `full_text` and `abstracts` counts of successful
-readings. Quoted passages must occur verbatim in the selected source. Full article
+readings. Source text is divided into numbered excerpts of at most 1,500
+characters. The model selects excerpt IDs; the server rejects unknown IDs and
+inserts the original text into the returned `passage` fields. These checks establish
+provenance, not the semantic accuracy of the explanation. Full article
 bodies stay in server-side snapshots, not API or PostgreSQL payloads. Cached PMC
 access metadata is rehydrated with verified documents before analysis. Cache keys
 include search mode and source contents; broad searches always analyze abstracts.
 Partial failures are not cached as finished overviews; successful readings can be
 reused on retry. Concurrent overview requests share the same work.
+
+### Analysis recovery
+
+Transient provider failures (429, server errors, connection failures, and timeouts)
+are retried up to three total attempts, with backoff and numeric `Retry-After`
+handling. Cooldowns over 30 seconds are reported without retrying early.
+Invalid output or an unknown source excerpt gets one corrective attempt. A failed
+full-text reading tries a usable abstract, except for configuration/authentication
+failures or exhausted rate limits. Successful fallbacks are labeled; they are not
+cached as finished overviews, allowing a retry to recover full-text analysis.
+
+Requests allow 60 seconds of network inactivity, with a 75-second reading-attempt
+budget. Four studies can be analyzed concurrently. At the 240-second reading-phase
+deadline, unfinished studies receive explicit failure reasons while completed
+readings remain available for synthesis and retry. Synthesis has a 65-second budget;
+the shared overview is bounded at 320 seconds (the route allows 325 seconds).
+Provider/configuration errors, missing text, quote-selection failures, and deadlines
+have distinct user-facing explanations. Raw provider errors and credentials are
+never returned.
+
+The raw-milk PMC regression check used the same 20 retrieved studies before and
+after this change. It improved from 7 analyzed / 10 failed / 3 without usable text
+to 17 analyzed / 0 failed / 3 without usable text (16 full-text readings, 1 abstract).
+This live run verifies recovery for that result set, not a guarantee of future
+provider availability or explanation accuracy.
 
 ### Search scope
 
