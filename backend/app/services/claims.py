@@ -117,6 +117,7 @@ async def retrieve_candidates(
     claim: str, limit: int, pubmed: PubMedClient,
     cache: ClaimsCache | None = None, refresh: bool = False,
     pmc: PMCClient | None = None, crossref: CrossrefClient | None = None,
+    pmc_only: bool = False,
 ) -> ClaimCandidates:
     """With `refresh`, skip cached values but still store the fresh result."""
     raw_key = canonical_claim_key(claim)
@@ -126,12 +127,13 @@ async def retrieve_candidates(
         if cache is not None:
             await cache.put_normalized(raw_key, normalized)
 
-    results_key = (normalized.query, limit)
+    search_query = f'({normalized.query}) AND "pubmed pmc"[sb]' if pmc_only else normalized.query
+    results_key = (search_query, limit)
     cached = None if cache is None or refresh else await cache.get_candidates(results_key)
     if cached is not None:
         return cached.model_copy(update={"claim": claim, "normalized": normalized, "cached": True})
 
-    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, crossref, refresh)
+    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, crossref, refresh, search_query)
     if cache is not None and retrieved.complete:
         await cache.put_candidates(results_key, retrieved.candidates)
     return retrieved.candidates
@@ -151,8 +153,9 @@ async def _retrieve(
     claim: str, normalized: NormalizedClaim, limit: int,
     pubmed: PubMedClient,
     pmc: PMCClient | None, crossref: CrossrefClient | None, refresh: bool,
+    search_query: str,
 ) -> _Retrieved:
-    results = await pubmed.search(normalized.query, limit)
+    results = await pubmed.search(search_query, limit)
     # Deduplicate PubMed aliases by PMID and DOI, keeping the first ranked record.
     seen_pmids: set[str] = set()
     seen_dois: set[str] = set()

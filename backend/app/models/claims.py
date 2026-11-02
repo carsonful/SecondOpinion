@@ -19,6 +19,7 @@ class ClaimRequest(BaseModel):
         description="One raw health-effect claim or question; surrounding whitespace is removed.",
         examples=["Does zinc help with the common cold?"],
     )
+    pmc_only: bool = Field(default=False, description="Restrict search to studies in PubMed Central.")
     limit: int = Field(
         default=20, ge=1, le=100,
         description="Maximum PubMed records to retrieve before deduplication; fewer candidates may be returned.",

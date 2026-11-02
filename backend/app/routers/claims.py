@@ -48,7 +48,7 @@ async def search_claim(
     try:
         result = await retrieve_candidates(
             request.claim, request.limit, pubmed, cache=cache, refresh=refresh, pmc=pmc,
-            crossref=crossref,
+            crossref=crossref, pmc_only=request.pmc_only,
         )
         return result.model_copy(update={"analysis_id": register_snapshot(result)})
     except ClaimNormalizationError as exc:

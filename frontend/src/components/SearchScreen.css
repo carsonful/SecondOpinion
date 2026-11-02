@@ -1018,3 +1018,11 @@
     display: none;
   }
 }
+
+.search__options { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin: 1.25rem 0; }
+.search__toggle { display: inline-flex; align-items: center; gap: .6rem; cursor: pointer; }
+.search__toggle input { width: 1.2rem; height: 1.2rem; accent-color: #2a6cb8; }
+.search__info { border: 1px solid currentColor; border-radius: 50%; width: 1.5rem; height: 1.5rem; background: transparent; color: inherit; cursor: pointer; font-weight: 700; }
+.search__info:focus-visible, .search__toggle input:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.search__info-panel { flex-basis: 100%; text-align: left; font-size: .9rem; line-height: 1.5; }
+.search__info-panel p { margin: .5rem 0; }

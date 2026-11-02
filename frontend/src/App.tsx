@@ -36,6 +36,8 @@ function App() {
       {page === 'about' && <AboutPage />}
       {page === 'home' && (
         <SearchScreen
+          pmcOnly={checker.pmcOnly}
+          setPmcOnly={checker.setPmcOnly}
           claim={checker.claim}
           setClaim={checker.setClaim}
           status={checker.status}

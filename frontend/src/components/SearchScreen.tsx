@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef } from 'react'
+import { FormEvent, useEffect, useRef, useId, useState } from 'react'
 import { Status } from '../hooks/useClaimChecker'
 import { ClaimCandidates, VerdictData } from '../types'
 import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
@@ -20,6 +20,8 @@ const CHECKS = [
 ]
 
 interface SearchScreenProps {
+  pmcOnly: boolean
+  setPmcOnly: (value: boolean) => void
   claim: string
   setClaim: (value: string) => void
   status: Status
@@ -36,6 +38,8 @@ interface SearchScreenProps {
  * dark mode); the bottom, where the result appears, is always light.
  */
 export default function SearchScreen({
+  pmcOnly,
+  setPmcOnly,
   claim,
   setClaim,
   status,
@@ -46,6 +50,8 @@ export default function SearchScreen({
   activeClaim,
   onHowItWorks,
 }: SearchScreenProps) {
+  const [showSearchInfo, setShowSearchInfo] = useState(false)
+  const searchInfoId = useId()
   const resultRef = useRef<HTMLDivElement>(null)
   const showResult = status === 'success' && Boolean(verdict || candidates)
 
@@ -81,6 +87,19 @@ export default function SearchScreen({
           <p className="search__subhead">
             Search a health claim to explore related studies, learn their designs, and open the available sources.
           </p>
+
+          <div className="search__options">
+            <label className="search__toggle">
+              <input type="checkbox" role="switch" checked={pmcOnly} disabled={status === 'loading'} onChange={event => setPmcOnly(event.target.checked)} />
+              <span>PubMed Central only</span>
+            </label>
+            <button type="button" className="search__info" aria-label="About PubMed Central only" aria-expanded={showSearchInfo} aria-controls={searchInfoId} onClick={() => setShowSearchInfo(value => !value)}>i</button>
+            <div id={searchInfoId} hidden={!showSearchInfo} className="search__info-panel">
+              <p><strong>On:</strong> Search only studies with full text in PubMed Central. Checking full text may take longer and can provide more detail, but this smaller collection may return few or no studies for your question.</p>
+              <p><strong>Off:</strong> Search all of PubMed, including studies available only as abstracts or citations. You can view abstracts, study types, journal details, and source links.</p>
+              <p>The research overview uses abstracts in both modes. This choice applies to your next search.</p>
+            </div>
+          </div>
 
           <form className="search__capsule" onSubmit={handleSubmit} role="search">
             <label className="search__capsule-input glass-card">

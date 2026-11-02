@@ -176,3 +176,9 @@ and expressions of concern are withheld pending resolution. Only the first 20
 retained papers are considered for analysis. Full text is not used in this version.
 Partial failures are not cached as finished overviews; successful readings can be
 reused on retry. Concurrent overview requests share the same work.
+
+### Search scope
+
+`POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; research overviews remain abstract-based. Cache entries are separated by the actual search query.
+
+The search-page information button explains the coverage and retrieval-time tradeoff. Example buttons run a live search with the selected scope instead of loading a saved verdict that may have a different scope. Refresh retains the scope of the displayed search.

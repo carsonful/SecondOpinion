@@ -439,3 +439,21 @@ def test_cached_results_keep_their_integrity_status(api) -> None:
 
     assert second.json()["cached"] is True
     assert integrity(second) == integrity(first)
+
+
+def test_pmc_search_filters_before_limit_and_keeps_modes_cached_separately(api, calls: Calls):
+    client = api()
+    broad = client.post('/api/claims', json={**ZINC, 'pmc_only': False})
+    restricted = client.post('/api/claims', json={**ZINC, 'pmc_only': True})
+    assert broad.status_code == restricted.status_code == 200
+    searches = calls.ncbi.calls_to('esearch.fcgi')
+    assert searches[0].url.params['term'] == NORMALIZED.query
+    assert searches[1].url.params['term'] == f'({NORMALIZED.query}) AND "pubmed pmc"[sb]'
+    assert searches[1].url.params['retmax'] == str(ZINC['limit'])
+    assert restricted.json()['cached'] is False
+    before = calls.external
+    for mode in (True, False):
+        response = client.post('/api/claims', json={**ZINC, 'pmc_only': mode})
+        assert response.status_code == 200
+        assert response.json()['cached'] is True
+    assert calls.external == before
