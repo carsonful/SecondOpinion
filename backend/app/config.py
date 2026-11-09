@@ -1,7 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +21,21 @@ class Settings(BaseSettings):
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
+
+    @field_validator("cors_origins")
+    @classmethod
+    def explicit_cors_origins(cls, origins: list[str]) -> list[str]:
+        for origin in origins:
+            parsed = urlsplit(origin)
+            if (
+                parsed.scheme not in {"http", "https"} or not parsed.hostname
+                or parsed.username is not None or parsed.password is not None
+                or "*" in origin or origin != f"{parsed.scheme}://{parsed.netloc}"
+            ):
+                raise ValueError("CORS_ORIGINS must contain explicit HTTP(S) origins without paths or credentials")
+            # Accessing port also rejects malformed/out-of-range port numbers.
+            _ = parsed.port
+        return origins
 
     inference_rate_limit_enabled: bool = True
     inference_rate_limit_requests: int = Field(default=10, ge=1, le=10000)
