@@ -149,6 +149,41 @@ Backend tests use recorded or mocked service responses. The PostgreSQL
 integration tests require `TEST_DATABASE_URL` (examples) or
 `TEST_CACHE_DATABASE_URL` (claim cache).
 
+## Changes prompted by Rafael's review
+
+Rafael ([@rafaelromwno](https://github.com/rafaelromwno)) opened issues #76–#83
+following a security and usability review. The table below records our response
+to each suggestion and distinguishes implemented changes from planned work.
+As of November 9, 2026, the implemented changes are on `toggle-feature` in
+[PR #84](https://github.com/carsonful/SecondOpinion/pull/84), which has not yet
+merged into `main`.
+
+| Feedback issue | What we changed or plan to change | Status |
+| --- | --- | --- |
+| [#76: Stop logging raw health claims](https://github.com/carsonful/SecondOpinion/issues/76) | Removed original claims and extracted search fields from normalization logs. Logs retain success, error class, and provider. Upstream transport retry logs use exception classes rather than potentially sensitive exception messages. Documented the logging policy and its boundaries. | Implemented on the branch; closes on merge. |
+| [#77: Hide internal Azure configuration errors](https://github.com/carsonful/SecondOpinion/issues/77) | Normalization endpoints now return stable public service-error messages instead of internal configuration or provider details. Overview generation already uses sanitized failure reasons; regression coverage checks that internal details do not escape normalization responses. | Implemented on the branch; closes on merge. |
+| [#78: Add HTTP security headers](https://github.com/carsonful/SecondOpinion/issues/78) | Added API browser security headers, restrictive JSON-response CSP, and HSTS for HTTPS connections, including unexpected server-error responses. Restricted CORS to explicit origins and approved methods/headers. Added a same-origin frontend CSP to Vite production preview while keeping API docs usable. | Local implementation verified. Static-host headers, HTTPS redirects, trusted forwarding, and hosted error-response verification remain open. |
+| [#79: Add a favicon](https://github.com/carsonful/SecondOpinion/issues/79) | A favicon derived from the existing logo is planned. | Not implemented yet. |
+| [#80: Add a home disclaimer and shared footer](https://github.com/carsonful/SecondOpinion/issues/80) | A pre-search research-summary disclaimer and accessible footer across the main pages are planned. | Not implemented yet. |
+| [#81: Add routes, page titles, and navigation focus](https://github.com/carsonful/SecondOpinion/issues/81) | Shareable page URLs, refresh/Back/Forward support, distinct titles, and focus movement after page navigation are planned. | Not implemented yet; tracked separately from the accessibility audit. |
+| [#82: Address concrete accessibility findings](https://github.com/carsonful/SecondOpinion/issues/82) | Combined its typography, contrast, skip-link, landmark, focus, and tab-keyboard requirements with the broad audit in #28 into [#85](https://github.com/carsonful/SecondOpinion/issues/85). Preserved NJ's assignment, labels, milestone, iteration, and board dates; linked and closed the originals as superseded. | Tracking consolidated; the accessibility fixes are not implemented yet. Original descriptions and discussion remain available. |
+| [#83: Self-host fonts](https://github.com/carsonful/SecondOpinion/issues/83) | Replaced Google Fonts stylesheet/preconnect requests with local Comfortaa and Homemade Apple WOFF2 subsets. Preserved existing weights and swap behavior, preloaded the Latin subsets, and bundled license and attribution notices. | Implemented on the branch; closes on merge. |
+
+Implementation is recorded in commits
+[`c8063f3`](https://github.com/carsonful/SecondOpinion/commit/c8063f3)
+(logging/public-error changes, alongside the separate #70 request-limit work)
+and [`80e9205`](https://github.com/carsonful/SecondOpinion/commit/80e9205)
+(fonts/browser policies, alongside added CI checks).
+
+Validation for this batch: **280 backend tests passed, 8 database-dependent tests
+were skipped**, and the frontend production build passed. Tests cover log
+privacy, public errors, CORS, security headers, and HTTPS-only HSTS behavior.
+The built app was visually checked in Firefox, and HTTP smoke checks verified
+the preview security policy, all seven locally served font subsets, and license
+notices. These were local checks; hosted behavior and the pending accessibility
+work have not been validated. The [PR comment](https://github.com/carsonful/SecondOpinion/pull/84#issuecomment-6747611010)
+records the implementation and remaining hosting work.
+
 ## API
 
 | Method | Path | Purpose |
