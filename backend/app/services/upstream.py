@@ -57,7 +57,7 @@ async def get_with_retries(
             if attempt == MAX_RETRIES:
                 raise unavailable_error(f"Could not reach {service}: {exc}") from exc
             delay = RETRY_BASE_DELAY * 2**attempt
-            logger.warning("%s transport error (%s), retrying in %.1fs", service, exc, delay)
+            logger.warning("%s transport error (%s), retrying in %.1fs", service, type(exc).__name__, delay)
             await sleep(delay)
             continue
 

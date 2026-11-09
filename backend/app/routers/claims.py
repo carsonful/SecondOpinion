@@ -9,11 +9,12 @@ from app.routers.pubmed import PubMedDep
 from app.services.pmc import PMCClient
 from app.services.claims import ClaimsCache, retrieve_candidates
 from app.services.normalization import ClaimNormalizationError, FoundryUnavailableError
+from app.services.inference_limits import require_inference_budget
 
 from app.models.overview import ResearchOverview
 from app.services.research_overview import register_snapshot, snapshots, shared_overview, OVERVIEW_TIMEOUT
 
-router = APIRouter(prefix="/claims", tags=["claims"])
+router = APIRouter(prefix="/claims", tags=["claims"], dependencies=[Depends(require_inference_budget)])
 
 
 def get_pmc_client(request: Request) -> PMCClient | None:
@@ -29,6 +30,7 @@ def get_claims_cache(request: Request) -> ClaimsCache:
 
 @router.post("", responses={
     422: {"description": "Invalid input or not one clear health claim"},
+    429: {"description": "Request limit exceeded; retry after Retry-After seconds"},
     502: {"description": "An evidence source returned an unusable response"},
     503: {"description": "Normalization or an evidence source is unavailable"},
 })
@@ -51,14 +53,15 @@ async def search_claim(
             crossref=crossref, pmc_only=request.pmc_only,
         )
         return result.model_copy(update={"analysis_id": register_snapshot(result)})
-    except ClaimNormalizationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from None
-    except FoundryUnavailableError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from None
+    except ClaimNormalizationError:
+        raise HTTPException(status_code=422, detail="Enter one clear health-effect claim") from None
+    except FoundryUnavailableError:
+        raise HTTPException(status_code=503, detail="Inference service unavailable. Try again shortly.") from None
 
 
 @router.post("/overview/{analysis_id}", response_model=ResearchOverview, responses={
     410: {"description": "Search snapshot expired; refresh the search"},
+    429: {"description": "Request limit exceeded; retry after Retry-After seconds"},
     503: {"description": "Overview took too long; retry while keeping the retrieved studies"},
 })
 async def research_overview(analysis_id: str) -> ResearchOverview:

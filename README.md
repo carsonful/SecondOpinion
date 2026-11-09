@@ -48,6 +48,37 @@ cannot be reached, the backend still starts and the example buttons run a live
 search instead.
 Restart the backend after changing settings. See `.env.example` for cache options.
 
+### Request limits and logging
+
+The model-backed POST routes (`/api/claims`, `/api/claims/normalize`, and
+`/api/claims/overview/{analysis_id}`) share a per-client token bucket: a burst of
+10 requests, refilling at 10 requests per 60 seconds. All attempts count,
+including cache hits, invalid requests, and provider failures. An overview's
+internal model retries do not consume additional inbound tokens. A limited
+request returns `429` and a `Retry-After` header in seconds before model work
+starts. Configure the `INFERENCE_RATE_LIMIT_*` settings in `.env.example`;
+tests can set `INFERENCE_RATE_LIMIT_ENABLED=false`.
+
+Limits and client tracking are bounded and local to each process. Idle client
+entries expire after one window; when tracking is full, new clients receive
+`429` rather than evicting active limits. Restarting resets quotas. This is a
+basic abuse control, not a global Azure spending cap or a concurrency limit.
+Use one backend worker initially, and shared limits or an ingress gateway
+before scaling across workers or instances.
+
+Client identity uses the ASGI peer address; application code never trusts
+`X-Forwarded-For` or `X-Real-IP` directly. Behind a reverse proxy, configure
+Uvicorn's `--forwarded-allow-ips` with only the actual trusted proxy addresses
+and prevent direct access around the proxy. Do not use `*` for an exposed
+backend. Without trusted forwarding, visitors through one proxy share a quota.
+
+Normalization application logs contain only success, error class, and provider;
+they omit claim text, extracted fields, and search queries. Transient upstream
+transport logs record exception classes instead of exception messages. Public
+normalization failures use stable messages rather than provider/configuration
+details. Hosting access logs, HTTP-client debug logs, and Azure telemetry are
+separate: configure their retention and redaction before public deployment.
+
 ### Frontend
 
 ```sh

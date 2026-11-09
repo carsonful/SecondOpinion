@@ -219,3 +219,21 @@ provider availability or explanation accuracy.
 `POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; overviews use full text in PMC-only mode and abstracts in broader mode. Cache entries are separated by the actual search query.
 
 The search-page information button explains the coverage and retrieval-time tradeoff. Example buttons run a live search with the selected scope instead of loading a saved verdict that may have a different scope. Refresh retains the scope of the displayed search.
+
+## Inbound request limit
+
+`POST /api/claims`, `POST /api/claims/normalize`, and
+`POST /api/claims/overview/{analysis_id}` share a per-client, per-process token
+bucket. The default burst is 10 requests, refilling at 10 per minute. Cached
+requests and failed attempts count. Rejected requests return HTTP `429` with
+`{"detail":"Too many research requests. Please wait before trying again."}`
+and a positive integer `Retry-After` header (seconds). Papers already retrieved
+remain usable; retry the overview after the indicated wait.
+
+Provider/configuration failures during claim normalization return HTTP `503`
+with `{"detail":"Inference service unavailable. Try again shortly."}`.
+Service-level claim rejection returns `422` with
+`{"detail":"Enter one clear health-effect claim"}`. Request schema validation
+continues to use FastAPI's validation response. Provider exception messages and
+configuration names are not included in these public service-error responses.
+See the README for proxy trust, configuration, logging, and scaling limits.

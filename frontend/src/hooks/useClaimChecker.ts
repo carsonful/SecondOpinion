@@ -5,6 +5,7 @@ export type Status = 'idle' | 'loading' | 'error' | 'success'
 
 function requestError(status: number): string {
   if (status === 422) return 'Enter one clear health claim of up to 2,000 characters.'
+  if (status === 429) return 'Too many research requests. Please wait a moment before trying again.'
   if (status === 503) return 'An evidence service is unavailable. Try again shortly.'
   return 'Something went wrong on our end. Try again in a moment.'
 }

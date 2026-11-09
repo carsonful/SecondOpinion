@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
+
+    inference_rate_limit_enabled: bool = True
+    inference_rate_limit_requests: int = Field(default=10, ge=1, le=10000)
+    inference_rate_limit_window_seconds: int = Field(default=60, ge=1, le=86400)
+    inference_rate_limit_max_clients: int = Field(default=10000, ge=1, le=1000000)
 
     # NCBI E-utilities. An API key raises the rate limit from 3 to 10 requests/second.
     # NCBI asks every client to identify itself with a tool name and contact email.

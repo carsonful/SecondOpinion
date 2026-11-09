@@ -160,6 +160,15 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
     async function load() {
       try {
         const response = await fetch(`/api/claims/overview/${result.analysis_id}`, { method: 'POST', signal: controller.signal })
+        if (response.status === 429) {
+          if (!controller.signal.aborted) {
+            const seconds = Number(response.headers.get('Retry-After'))
+            setError(Number.isFinite(seconds) && seconds > 0
+              ? `Too many research requests. Retry the overview in ${Math.ceil(seconds)} seconds. Your papers are still available below.`
+              : 'Too many research requests. Please wait before retrying the overview. Your papers are still available below.')
+          }
+          return
+        }
         if (response.status === 410) {
           if (!controller.signal.aborted) { setExpired(true); setError('This search session expired. Refresh the search for a new overview.') }
           return
