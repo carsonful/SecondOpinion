@@ -70,7 +70,12 @@ def test_foundry_request_and_normalized_output(caplog):
     assert result.version == "foundry-v1"
     assert result.population is None
     record = next(r for r in caplog.records if r.msg == "claim_normalization")
-    assert record.normalized_output == result.model_dump()
+    assert record.success is True
+    assert record.error_type is None
+    assert "raw_input" not in record.__dict__
+    assert "normalized_output" not in record.__dict__
+    assert "does zinc cure colds lol" not in str(record.__dict__)
+    assert result.query not in str(record.__dict__)
     assert "test-secret" not in caplog.text
 
 
@@ -126,8 +131,9 @@ def test_rejection_is_logged(caplog):
         normalize_claim("Who won the game?", settings=settings(),
                         transport=httpx.MockTransport(lambda _: httpx.Response(200, json=response(data))))
     record = next(r for r in caplog.records if r.msg == "claim_normalization")
-    assert record.normalized_output is None
-    assert record.error
+    assert record.success is False
+    assert record.error_type == "ClaimNormalizationError"
+    assert "Who won the game?" not in str(record.__dict__)
 
 
 def test_missing_configuration():

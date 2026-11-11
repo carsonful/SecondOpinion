@@ -1,4 +1,4 @@
-"""Abstract-based explanations and cited observations; no quality grades."""
+"""Source-grounded explanations and cited observations; no quality grades."""
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -32,11 +32,15 @@ class Synthesis(Structured):
 class StudyReading(BaseModel):
     pmid: str
     status: Literal["analyzed", "no_abstract", "withheld", "failed", "outside_limit"]
+    source_basis: Literal["full_text", "abstract"] | None = None
+    source_note: str | None = None
     reason: str | None = None
     explanation: StudyExplanation | None = None
 
 
 class OverviewCoverage(BaseModel):
+    full_text: int = 0
+    abstracts: int = 0
     retrieved: int
     analyzed: int
     direct: int
@@ -51,7 +55,7 @@ class OverviewCoverage(BaseModel):
 
 
 class ResearchOverview(BaseModel):
-    basis: Literal["abstracts"] = "abstracts"
+    basis: Literal["abstracts", "full_text", "mixed"] = "abstracts"
     status: Literal["complete", "partial", "unavailable", "insufficient_information"]
     coverage: OverviewCoverage
     studies: list[StudyReading]

@@ -2,12 +2,12 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from app.models.crossref import IntegrityNotice
 from app.models.normalization import NormalizedClaim
 from app.models.metadata import StudyMetadata
-from app.models.full_text import EvidenceCoverage, FullTextAccess
+from app.models.full_text import EvidenceCoverage, FullTextAccess, PMCDocument
 from app.models.pubmed import PubMedArticle
 
 
@@ -19,6 +19,7 @@ class ClaimRequest(BaseModel):
         description="One raw health-effect claim or question; surrounding whitespace is removed.",
         examples=["Does zinc help with the common cold?"],
     )
+    pmc_only: bool = Field(default=False, description="Restrict search to studies in PubMed Central.")
     limit: int = Field(
         default=20, ge=1, le=100,
         description="Maximum PubMed records to retrieve before deduplication; fewer candidates may be returned.",
@@ -45,6 +46,8 @@ class CandidateIntegrity(BaseModel):
 
 
 class CandidateStudy(BaseModel):
+    # Server-only source material; never included in API or persistent-cache payloads.
+    _document: PMCDocument | None = PrivateAttr(default=None)
     article: PubMedArticle
     metadata: StudyMetadata
     access: FullTextAccess
@@ -52,6 +55,7 @@ class CandidateStudy(BaseModel):
 
 
 class ClaimCandidates(BaseModel):
+    pmc_only: bool = False
     status: Literal["candidates"] = "candidates"
     analysis_id: str | None = Field(default=None, description="Temporary token for an overview of this exact search snapshot.")
     claim: str

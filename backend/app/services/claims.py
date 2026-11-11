@@ -117,6 +117,7 @@ async def retrieve_candidates(
     claim: str, limit: int, pubmed: PubMedClient,
     cache: ClaimsCache | None = None, refresh: bool = False,
     pmc: PMCClient | None = None, crossref: CrossrefClient | None = None,
+    pmc_only: bool = False,
 ) -> ClaimCandidates:
     """With `refresh`, skip cached values but still store the fresh result."""
     raw_key = canonical_claim_key(claim)
@@ -126,12 +127,30 @@ async def retrieve_candidates(
         if cache is not None:
             await cache.put_normalized(raw_key, normalized)
 
-    results_key = (normalized.query, limit)
+    search_query = f'({normalized.query}) AND "pubmed pmc"[sb]' if pmc_only else normalized.query
+    results_key = (search_query, limit)
     cached = None if cache is None or refresh else await cache.get_candidates(results_key)
     if cached is not None:
-        return cached.model_copy(update={"claim": claim, "normalized": normalized, "cached": True})
+        result = cached.model_copy(deep=True, update={"claim": claim, "normalized": normalized, "cached": True, "pmc_only": pmc_only})
+        # Persistent cache payloads contain access metadata, not article bodies.
+        # Restore verified documents before registering the analysis snapshot.
+        if pmc_only and pmc is not None:
+            async def restore(study):
+                if study._document is None and study.access.level == "full_text":
+                    result.cached = False
+                    text = await pmc.retrieve(study.article)
+                    study._document = text.document
+                    study.access = text.access
+            await asyncio.gather(*(restore(study) for study in result.candidates))
+            result.coverage = EvidenceCoverage(
+                retrieved_studies=len(result.candidates),
+                full_text_available=sum(c.access.level == "full_text" for c in result.candidates),
+                abstract_only=sum(c.access.level == "abstract_only" for c in result.candidates),
+                metadata_only=sum(c.access.level == "metadata_only" for c in result.candidates),
+            )
+        return result
 
-    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, crossref, refresh)
+    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, crossref, refresh, search_query, pmc_only)
     if cache is not None and retrieved.complete:
         await cache.put_candidates(results_key, retrieved.candidates)
     return retrieved.candidates
@@ -151,8 +170,9 @@ async def _retrieve(
     claim: str, normalized: NormalizedClaim, limit: int,
     pubmed: PubMedClient,
     pmc: PMCClient | None, crossref: CrossrefClient | None, refresh: bool,
+    search_query: str, pmc_only: bool,
 ) -> _Retrieved:
-    results = await pubmed.search(normalized.query, limit)
+    results = await pubmed.search(search_query, limit)
     # Deduplicate PubMed aliases by PMID and DOI, keeping the first ranked record.
     seen_pmids: set[str] = set()
     seen_dois: set[str] = set()
@@ -208,12 +228,14 @@ async def _retrieve(
                 status=integrity.status, label=integrity.label, notices=list(integrity.notices),
             ),
         )
+        if pmc_only:
+            study._document = text.document
         # Retracted studies are kept out of the results but still reported, so the
         # response says what was removed and why.
         (excluded if integrity.status == "retracted" else candidates).append(study)
     return _Retrieved(
         ClaimCandidates(
-            claim=claim, normalized=normalized, query_translation=results.query_translation,
+            pmc_only=pmc_only, claim=claim, normalized=normalized, query_translation=results.query_translation,
             total_results=results.total_results, candidates=candidates,
             excluded_retracted=excluded,
             coverage=EvidenceCoverage(

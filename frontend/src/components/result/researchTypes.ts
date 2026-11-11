@@ -8,11 +8,12 @@ export type Explanation = {
   relationship: { text: string; passage: string }
   gaps: string[]
 }
-export type Reading = { pmid: string; status: string; reason: string | null; explanation: Explanation | null }
+export type Reading = { source_basis?: 'full_text' | 'abstract' | null; source_note?: string | null; pmid: string; status: string; reason: string | null; explanation: Explanation | null }
 export type Observation = { text: string; pmids: string[] }
 export type Overview = {
+  basis: 'abstracts' | 'full_text' | 'mixed'
   status: 'complete' | 'partial' | 'unavailable' | 'insufficient_information'
-  coverage: { retrieved: number; analyzed: number; direct: number; related: number; not_addressed: number; unclear: number; no_abstract: number; withheld: number; failed: number; outside_limit: number; excluded_retracted: number }
+  coverage: { full_text: number; abstracts: number; retrieved: number; analyzed: number; direct: number; related: number; not_addressed: number; unclear: number; no_abstract: number; withheld: number; failed: number; outside_limit: number; excluded_retracted: number }
   studies: Reading[]
   synthesis: { observations: Observation[]; qualifications: Observation[] } | null
   cached: boolean

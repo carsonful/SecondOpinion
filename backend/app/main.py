@@ -10,10 +10,12 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import get_settings
+from app.security_headers import SecurityHeadersFastAPI
 from app.routers import claims, crossref, examples, health, normalization, pubmed
 from app.services.claims import ClaimsCache
 from app.services.crossref import CrossrefClient
 from app.services.examples import initialize_examples
+from app.services.inference_limits import InferenceLimiter
 from app.services.pubmed import PubMedClient
 from app.services.pmc import PMCClient
 from app.services.upstream import UpstreamResponseError, UpstreamUnavailableError
@@ -55,14 +57,21 @@ async def upstream_response_handler(request: Request, exc: Exception) -> JSONRes
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
+    app = SecurityHeadersFastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
     app.state.claims_cache = ClaimsCache.from_settings(settings)
+    app.state.inference_limiter = InferenceLimiter(
+        settings.inference_rate_limit_requests,
+        settings.inference_rate_limit_window_seconds,
+        settings.inference_rate_limit_max_clients,
+        enabled=settings.inference_rate_limit_enabled,
+    )
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
+        expose_headers=["Retry-After"],
     )
 
     app.add_exception_handler(UpstreamUnavailableError, upstream_unavailable_handler)

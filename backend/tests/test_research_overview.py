@@ -44,7 +44,7 @@ def fake_generator(calls):
     async def generate(client, schema, prompt, data):
         calls.append(data)
         if schema is StudyExplanation:
-            return explanation(data['abstract'])
+            return explanation('P1')
         return Synthesis(observations=[{'text': 'The retrieved abstracts report findings.',
                                        'pmids': [data['readings'][0]['pmid']]}], qualifications=[])
     return generate
@@ -90,7 +90,7 @@ def test_fabricated_passages_withheld_and_partial_recoverable(result, monkeypatc
     bad_abstract = result.candidates[0].article.abstract
     async def generate(client, schema, prompt, data):
         output = await good(client, schema, prompt, data)
-        if schema is StudyExplanation and data['abstract'] == bad_abstract:
+        if schema is StudyExplanation and bad_abstract[:100] in data['abstract']:
             output.summary.passage = 'Fabricated quote not in the abstract.'
         return output
     monkeypatch.setattr(service, 'generate', generate)
@@ -151,7 +151,7 @@ def test_http_generation_validates_and_sanitizes(monkeypatch):
             return await service.generate(client, StudyExplanation, 'prompt', {'claim': 'test'})
     payload = {'choices': [{'finish_reason': 'stop', 'message': {'content': explanation('Source passage.').model_dump_json()}}]}
     assert asyncio.run(run(200, payload)).relevance == 'direct'
-    with pytest.raises(service.OverviewUnavailable, match='validated'):
+    with pytest.raises(service.OverviewUnavailable, match='authentication'):
         asyncio.run(run(401, {'secret': 'private provider error'}))
     payload['choices'][0]['finish_reason'] = 'length'
     with pytest.raises(service.OverviewUnavailable):
@@ -213,3 +213,271 @@ def test_twenty_paper_bound_and_retractions(result, monkeypatch):
     assert overview.coverage.excluded_retracted == 1
     assert len(calls[-1]['readings']) == 20
     assert all(r['pmid'] != prototype.article.pmid for r in calls[-1]['readings'])
+
+
+def attach_document(candidate, text='The full-text results reported no difference between groups.'):
+    from app.models.full_text import PMCDocument, TextSection
+    candidate.article.pmc_id = candidate.article.pmc_id or 'PMC123456'
+    candidate._document = PMCDocument(
+        pmc_id=candidate.article.pmc_id, pmid=candidate.article.pmid,
+        source_url='https://pmc.ncbi.nlm.nih.gov/articles/PMC123456/',
+        license=None, sections=[TextSection(id='s1', label='RESULTS', text=text)],
+    )
+
+
+def full_text_generator(calls):
+    async def generate(client, schema, prompt, data):
+        calls.append(data)
+        if schema is StudyExplanation:
+            return explanation('P1')
+        return Synthesis(observations=[{'text': 'These sources report findings.',
+                                       'pmids': [r['pmid'] for r in data['readings']]}], qualifications=[])
+    return generate
+
+
+def test_full_text_without_abstract_and_labeled_fallback(result, monkeypatch):
+    result.pmc_only = True
+    attach_document(result.candidates[0])
+    result.candidates[0].article.abstract = None
+    calls = []
+    monkeypatch.setattr(service, 'generate', full_text_generator(calls))
+    overview = asyncio.run(service.build_overview(result))
+    assert overview.basis == 'mixed'
+    assert overview.coverage.full_text == 1
+    assert overview.coverage.abstracts == 2
+    assert overview.studies[0].source_basis == 'full_text'
+    assert 'full_text' in calls[0] and 'abstract' not in calls[0]
+    assert overview.studies[1].source_basis == 'abstract'
+    assert 'unavailable' in overview.studies[1].source_note
+    assert '_document' not in result.candidates[0].model_dump()
+
+
+def test_full_text_cache_and_broad_mode_are_separate(result, monkeypatch):
+    result.pmc_only = True
+    for candidate in result.candidates:
+        attach_document(candidate)
+    calls = []
+    monkeypatch.setattr(service, 'generate', full_text_generator(calls))
+    assert asyncio.run(service.build_overview(result)).basis == 'full_text'
+    first_key = service.cache_key(result)
+    result.candidates[0]._document.sections[0].text = 'Updated full-text findings.'
+    assert service.cache_key(result) != first_key
+    asyncio.run(service.build_overview(result))
+    assert any('Updated full-text findings.' in c.get('full_text', '') for c in calls)
+    result.pmc_only = False
+    calls.clear()
+    overview = asyncio.run(service.build_overview(result))
+    assert overview.basis == 'abstracts'
+    assert all('abstract' in c for c in calls if 'title' in c)
+
+
+@pytest.mark.parametrize('problem', ['oversized', 'wrong_identity'])
+def test_unusable_full_text_falls_back_explicitly(result, monkeypatch, problem):
+    result.pmc_only = True
+    candidate = result.candidates[0]
+    attach_document(candidate)
+    if problem == 'oversized':
+        candidate._document.sections[0].text = 'x' * (service.MAX_FULL_TEXT_CHARS + 1)
+    else:
+        candidate._document.pmid = '999999'
+    monkeypatch.setattr(service, 'generate', full_text_generator([]))
+    overview = asyncio.run(service.build_overview(result))
+    assert overview.studies[0].source_basis == 'abstract'
+    assert overview.studies[0].source_note
+
+
+def test_full_text_passage_must_be_in_body_not_abstract(result, monkeypatch):
+    result.pmc_only = True
+    result.candidates = result.candidates[:1]
+    attach_document(result.candidates[0])
+    abstract = result.candidates[0].article.abstract
+    result.candidates[0].article.abstract = None
+    async def wrong_source(client, schema, prompt, data):
+        return explanation(abstract)
+    monkeypatch.setattr(service, 'generate', wrong_source)
+    overview = asyncio.run(service.build_overview(result))
+    assert overview.coverage.failed == 1
+    assert overview.synthesis is None
+
+
+def test_full_text_snapshot_preserves_body_and_integrity_checks(result, monkeypatch):
+    result.pmc_only = True
+    result.candidates = result.candidates[:1]
+    attach_document(result.candidates[0])
+    result.candidates[0].integrity.status = 'corrected'
+    token = service.register_snapshot(result)
+    original = result.candidates[0]._document.sections[0].text
+    result.candidates[0]._document.sections[0].text = 'tampered'
+    snapshot = service.snapshots.get(token)
+    assert snapshot.candidates[0]._document.sections[0].text == original
+    async def forbidden(*args):
+        pytest.fail('Integrity notice must block full-text analysis')
+    monkeypatch.setattr(service, 'generate', forbidden)
+    assert asyncio.run(service.build_overview(snapshot)).coverage.withheld == 1
+
+
+def test_pmc_search_snapshot_and_serialized_cache_restore_documents(api, cache, monkeypatch):
+    from app.services.pmc import PMCClient
+    from tests.test_claims import NORMALIZED
+    def retrieve(article):
+        from app.models.full_text import PMCDocument, TextSection
+        return PMCClient._available(PMCDocument(
+            pmc_id=article.pmc_id or 'PMC123456', pmid=article.pmid,
+            source_url='https://pmc.ncbi.nlm.nih.gov/articles/PMC123456/', license=None,
+            sections=[TextSection(id='s1', label='RESULTS', text='Body results beyond the abstract.')],
+        ))
+    client = api(pmc_handler=retrieve)
+    request = {'claim': 'Does zinc prevent colds?', 'limit': 3, 'pmc_only': True}
+    first = client.post('/api/claims', json=request)
+    assert first.status_code == 200
+    assert first.json()['pmc_only'] is True
+    snapshot = service.snapshots.get(first.json()['analysis_id'])
+    assert snapshot.candidates[0]._document is not None
+    assert 'Body results beyond the abstract.' not in first.text
+    # Mimic a cache value loaded from PostgreSQL, which omits private bodies.
+    key = (f'({NORMALIZED.query}) AND "pubmed pmc"[sb]', 3)
+    cache.results.set(key, ClaimCandidates.model_validate(snapshot.model_dump()))
+    restored = client.post('/api/claims', json=request)
+    assert restored.status_code == 200
+    restored_snapshot = service.snapshots.get(restored.json()['analysis_id'])
+    assert restored_snapshot.candidates[0]._document.sections[0].text == 'Body results beyond the abstract.'
+    monkeypatch.setattr(service, 'generate', full_text_generator([]))
+    response = client.post('/api/claims/overview/' + restored.json()['analysis_id'])
+    assert response.status_code == 200
+    assert response.json()['coverage']['full_text'] > 0
+
+
+def test_numbered_passages_preserve_source_and_reject_unknown_ids():
+    source = ('The study reported no benefit. ' * 140) + 'Final finding.'
+    passages = service.numbered_passages(source)
+    assert len(passages) > 1
+    assert all(text in source and len(text) <= 1500 for text in passages.values())
+    assert ' '.join(' '.join(passages.values()).split()) == ' '.join(source.split())
+    reading = explanation('P2')
+    service.resolve_passages(reading, passages)
+    assert reading.summary.passage == passages['P2']
+    with pytest.raises(service.OverviewUnavailable) as error:
+        service.resolve_passages(explanation('P999'), passages)
+    assert error.value.code == 'unverified_passage'
+
+
+def test_invalid_passage_selection_is_retried_before_dropping_study(result, monkeypatch):
+    seen = []
+    good = fake_generator(seen)
+    first = True
+    async def generate(client, schema, prompt, data):
+        nonlocal first
+        output = await good(client, schema, prompt, data)
+        if schema is StudyExplanation and first:
+            first = False
+            output.summary.passage = 'P999'
+        return output
+    monkeypatch.setattr(service, 'generate', generate)
+    overview = asyncio.run(service.build_overview(result))
+    assert overview.coverage.analyzed == 3
+    assert overview.coverage.failed == 0
+    assert len(seen) == 5  # Three studies, one repair attempt, and synthesis.
+    assert overview.studies[0].explanation.summary.passage in result.candidates[0].article.abstract
+
+
+def test_failed_full_text_recovers_abstract_without_caching_finished_overview(result, monkeypatch):
+    result.pmc_only = True
+    result.candidates = result.candidates[:1]
+    attach_document(result.candidates[0])
+    seen = []
+    good = full_text_generator(seen)
+    async def generate(client, schema, prompt, data):
+        if 'full_text' in data:
+            raise service.OverviewUnavailable('temporary outage', code='provider_unavailable')
+        return await good(client, schema, prompt, data)
+    monkeypatch.setattr(service, 'generate', generate)
+    first = asyncio.run(service.build_overview(result))
+    assert first.coverage.analyzed == 1
+    assert first.studies[0].source_basis == 'abstract'
+    assert 'abstract instead' in first.studies[0].source_note
+    assert service.completed.get(service.cache_key(result)) is None
+    # Retrying can upgrade the fallback to full text, keeping valid cached readings.
+    monkeypatch.setattr(service, 'generate', good)
+    second = asyncio.run(service.build_overview(result))
+    assert second.studies[0].source_basis == 'full_text'
+
+
+def test_analysis_deadline_keeps_finished_readings_and_cancels_pending(result, monkeypatch):
+    monkeypatch.setattr(service, 'READING_PHASE_TIMEOUT', 0.03)
+    good = fake_generator([])
+    blocked_title = result.candidates[0].article.title
+    cancelled = []
+    async def generate(client, schema, prompt, data):
+        if data.get('title') == blocked_title:
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancelled.append(True)
+        return await good(client, schema, prompt, data)
+    monkeypatch.setattr(service, 'generate', generate)
+    first = asyncio.run(service.build_overview(result))
+    assert first.status == 'partial'
+    assert first.coverage.analyzed == 2
+    assert first.coverage.failed == 1
+    assert 'deadline' in first.studies[0].reason
+    assert cancelled == [True]
+    seen = []
+    monkeypatch.setattr(service, 'generate', fake_generator(seen))
+    second = asyncio.run(service.build_overview(result))
+    assert second.coverage.analyzed == 3
+    assert len(seen) == 2  # Only the unfinished study and synthesis are retried.
+
+
+@pytest.mark.parametrize('first_status,code', [(429, 'rate_limited'), (503, 'provider_unavailable')])
+def test_generation_retries_transient_errors_and_honors_retry_after(monkeypatch, first_status, code):
+    monkeypatch.setattr(service, 'get_settings', lambda: Settings(
+        _env_file=None, azure_inference_endpoint='https://example.org',
+        azure_model_deployment_name='test', azure_inference_api_key='test-secret',
+    ))
+    sleeps, requests = [], []
+    async def sleep(delay):
+        sleeps.append(delay)
+    monkeypatch.setattr(service.asyncio, 'sleep', sleep)
+    def handler(request):
+        requests.append(request)
+        if len(requests) == 1:
+            return httpx.Response(first_status, headers={'Retry-After': '5'})
+        return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {
+            'content': explanation('P1').model_dump_json(),
+        }}]})
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await service.generate(client, StudyExplanation, 'prompt', {'claim': 'test'})
+    assert asyncio.run(run()).relevance == 'direct'
+    assert len(requests) == 2
+    assert sleeps == [5 if first_status == 429 else 2]
+
+
+def test_rate_limit_exhaustion_is_specific_and_sanitized(monkeypatch):
+    monkeypatch.setattr(service, 'get_settings', lambda: Settings(
+        _env_file=None, azure_inference_endpoint='https://example.org',
+        azure_model_deployment_name='test', azure_inference_api_key='test-secret',
+    ))
+    requests = []
+    async def sleep(delay):
+        pass
+    monkeypatch.setattr(service.asyncio, 'sleep', sleep)
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(429, json={'error': 'private provider details'})
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await service.generate(client, StudyExplanation, 'prompt', {})
+    with pytest.raises(service.OverviewUnavailable) as error:
+        asyncio.run(run())
+    assert error.value.code == 'rate_limited'
+    assert 'private' not in str(error.value)
+    assert len(requests) == service.PROVIDER_ATTEMPTS
+
+
+def test_failed_reading_explains_rate_limit(result, monkeypatch):
+    async def limited(*args):
+        raise service.OverviewUnavailable('upstream details', code='rate_limited')
+    monkeypatch.setattr(service, 'generate', limited)
+    overview = asyncio.run(service.build_overview(result))
+    assert all('rate-limiting' in reading.reason for reading in overview.studies)

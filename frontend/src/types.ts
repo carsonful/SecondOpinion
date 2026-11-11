@@ -13,6 +13,7 @@ export interface FullTextAccess {
 }
 
 export interface ClaimCandidates {
+  pmc_only: boolean
   status: 'candidates'
   claim: string
   normalized: { query: string }

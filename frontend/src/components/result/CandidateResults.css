@@ -146,3 +146,5 @@
   .research-board .referrals__stamp { right: 10px; padding: 5px 10px 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .research-board .referrals__stamp { animation: none; opacity: 0.9; } }
+.research-pmc-highlight { margin: 1rem 0 1.5rem; padding: 1rem 1.25rem; border: 1px solid #2f6690; border-left: 5px solid #2f6690; border-radius: .75rem; background: #edf5fc; color: #0b1957; }
+.research-pmc-highlight p { margin: .4rem 0 0; line-height: 1.5; }

@@ -95,15 +95,16 @@ function StudyCard({ study, number, reading, pending }: { study: Candidate; numb
       <p className="research-study__finding">{explanation.summary.text}</p>
       <div className="research-relationship"><strong>How this relates to your question</strong><p>{explanation.relationship.text}</p></div>
       <details><summary>Explanation and source passages</summary>
-        {explanation.gaps.length > 0 && <><h4>What the abstract leaves unclear</h4><ul>{explanation.gaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul></>}
+        {explanation.gaps.length > 0 && <><h4>What the {reading?.source_basis === 'full_text' ? 'retrieved full text' : 'abstract'} leaves unclear</h4><ul>{explanation.gaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul></>}
         <h4>Passage supporting the summary</h4><blockquote>{explanation.summary.passage}</blockquote>
         <h4>Passage supporting relevance</h4><blockquote>{explanation.relationship.passage}</blockquote>
       </details>
-    </> : <p className="research-muted">{reading?.reason || (!article.abstract?.trim() ? 'No abstract available to analyze.' : pending ? 'Reading this abstract…' : 'No abstract explanation is available yet.')}</p>}
+    </> : <p className="research-muted">{reading?.reason || (pending ? 'Reading the study…' : 'No study explanation is available yet.')}</p>}
+    {reading?.source_note && <p className="research-notice">{reading.source_note}</p>}
     <details><summary>Read original abstract</summary><p className="research-abstract">{article.abstract || 'PubMed does not provide an abstract for this record.'}</p></details>
     <footer><IntegrityNotice study={study} /><div className="research-links"><a href={article.url} target="_blank" rel="noreferrer">PubMed ↗</a>
       {access.source_url && <a href={access.source_url} target="_blank" rel="noreferrer">PMC full text ↗</a>}
-      <span>{access.level === 'full_text' ? 'Full text retrieved; explanation uses abstract' : access.level === 'abstract_only' ? 'Abstract available' : 'Citation only'}</span>
+      <span>{reading?.source_basis === 'full_text' && explanation ? 'Full-text analysis' : reading?.source_basis === 'abstract' && explanation ? 'Abstract-based analysis' : access.level === 'full_text' ? 'Full text retrieved' : access.level === 'abstract_only' ? 'Abstract available' : 'Citation only'}</span>
     </div></footer>
   </article>
 }
@@ -125,6 +126,11 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
   const boards = FAMILIES.map(family => ({ ...family, studies: shown.filter(study => familyOf(study.metadata.design).id === family.id) })).filter(board => board.studies.length)
   const mix = FAMILIES.map(family => ({ ...family, count: studies.filter(study => familyOf(study.metadata.design).id === family.id).length })).filter(group => group.count)
   const quick = overview?.synthesis?.observations[0]
+  const basisLabel = overview
+    ? overview.coverage.analyzed === 0 ? 'No sources analyzed' : {
+      full_text: 'Full-text analysis', mixed: 'Full text + abstract fallbacks', abstracts: 'Abstract-based',
+    }[overview.basis]
+    : result.pmc_only ? 'Full-text analysis requested' : 'Abstract-based'
 
   function goToBoard(id: string) {
     setFilter('all')
@@ -154,6 +160,15 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
     async function load() {
       try {
         const response = await fetch(`/api/claims/overview/${result.analysis_id}`, { method: 'POST', signal: controller.signal })
+        if (response.status === 429) {
+          if (!controller.signal.aborted) {
+            const seconds = Number(response.headers.get('Retry-After'))
+            setError(Number.isFinite(seconds) && seconds > 0
+              ? `Too many research requests. Retry the overview in ${Math.ceil(seconds)} seconds. Your papers are still available below.`
+              : 'Too many research requests. Please wait before retrying the overview. Your papers are still available below.')
+          }
+          return
+        }
         if (response.status === 410) {
           if (!controller.signal.aborted) { setExpired(true); setError('This search session expired. Refresh the search for a new overview.') }
           return
@@ -175,6 +190,12 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
     <div className="vr__top"><span className="search__kicker">YOUR SECOND OPINION</span><span className="search__hand">results are in</span></div>
     <p className="research-claim"><span>“{result.claim}”</span><button type="button" className="research-btn" onClick={onRefresh}>Refresh research <span aria-hidden="true">↻</span></button></p>
 
+    {result.pmc_only && <div className="research-pmc-highlight" role="note">
+      <strong>PubMed Central only · enabled for this search</strong>
+      <p>This search uses retrieved full text where available. Abstract fallbacks are labeled on each study.</p>
+      {overview && <p>{overview.coverage.full_text} studies analyzed from full text · {overview.coverage.abstracts} from abstracts.</p>}
+    </div>}
+
     <div className="vr__row">
       <div className="vr__capsule vr__capsule--brief">
         <div className="vr__capsule-top">
@@ -193,16 +214,16 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
 
       <section className="vr__chat glass-card research-answer" aria-label="Quick read of the research" aria-busy={pending}>
         <div className="vr__chat-body">
-          <div className="research-answer__head"><p className="search__kicker">QUICK READ · FROM THE RETRIEVED ABSTRACTS</p><span className="vr__chip">Abstract-based</span></div>
-          {pending && <div className="research-loading" role="status"><span className="research-spinner" />Reading the abstracts and comparing them with your claim…<p>The papers are ready below. The overview can take a few minutes.</p></div>}
+          <div className="research-answer__head"><p className="search__kicker">QUICK READ · FROM THE RETRIEVED STUDIES</p><span className="vr__chip">{basisLabel}</span></div>
+          {pending && <div className="research-loading" role="status"><span className="research-spinner" />{result.pmc_only ? 'Reading the available full text and comparing it with your claim…' : 'Reading the abstracts and comparing them with your claim…'}<p>The papers are ready below. The overview can take a few minutes.</p></div>}
           {!pending && error && <p role="alert">{error}</p>}
           {quick && <Citations className="research-quick" observation={quick} numbers={numbers} onSelect={selectCitation} />}
           {overview?.synthesis && (overview.synthesis.observations.length > 1 || overview.synthesis.qualifications.length > 0) && <div className="research-observations">
             {overview.synthesis.observations.slice(1).map((observation, i) => <Citations key={i} observation={observation} numbers={numbers} onSelect={selectCitation} />)}
             {overview.synthesis.qualifications.length > 0 && <div className="research-qualifications"><h4>Important qualifications</h4>{overview.synthesis.qualifications.map((observation, i) => <Citations key={i} observation={observation} numbers={numbers} onSelect={selectCitation} />)}</div>}
           </div>}
-          {!pending && overview && !overview.synthesis && <p>{overview.status === 'insufficient_information' ? 'The available abstracts do not provide enough usable information for an overview. This does not establish that no evidence exists.' : 'We couldn’t produce a verified overview. Available study explanations and original abstracts remain below.'}</p>}
-          {!pending && overview?.status === 'partial' && <p className="research-notice">This overview covers only the successfully analyzed abstracts. Some papers could not be analyzed.</p>}
+          {!pending && overview && !overview.synthesis && <p>{overview.status === 'insufficient_information' ? 'The available source texts do not provide enough usable information for an overview. This does not establish that no evidence exists.' : 'We couldn’t produce a verified overview. Available study explanations and original sources remain below.'}</p>}
+          {!pending && overview?.status === 'partial' && <p className="research-notice">This overview covers only the successfully analyzed source texts. Some papers could not be analyzed.</p>}
           {!pending && (error || overview?.status === 'unavailable' || overview?.status === 'partial') && <button type="button" className="research-btn" onClick={expired ? onRefresh : () => setAttempt(value => value + 1)}>{expired ? 'Refresh search' : 'Retry overview'}</button>}
           <p className="research-scope">AI-assisted reading of this search, not a verdict, a systematic review or a study-quality assessment. Citations link to the papers behind each observation.</p>
         </div>
@@ -210,7 +231,7 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
     </div>
 
     <p className="research-coverage-note">Showing {studies.length} papers from {result.total_results.toLocaleString()} PubMed matches{excluded.length ? `; ${excluded.length} retracted ${excluded.length === 1 ? 'paper excluded' : 'papers excluded'}` : ''}. Match counts do not measure evidence strength or relevance.
-      {overview && <> {overview.coverage.not_addressed} do not address the question; {overview.coverage.unclear} have unclear relevance; {overview.coverage.no_abstract} lack abstracts; {overview.coverage.withheld} withheld for integrity notices; {overview.coverage.failed} could not be analyzed; {overview.coverage.outside_limit} beyond the 20-paper analysis limit.</>}
+      {overview && <> {overview.coverage.not_addressed} do not address the question; {overview.coverage.unclear} have unclear relevance; {overview.coverage.no_abstract} lack usable text; {overview.coverage.withheld} withheld for integrity notices; {overview.coverage.failed} could not be analyzed; {overview.coverage.outside_limit} beyond the 20-paper analysis limit.</>}
       {' '}Listed in PubMed relevance order. Study design describes the research method, not its quality.
     </p>
 

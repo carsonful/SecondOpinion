@@ -111,7 +111,7 @@ def normalize_claim(
     transport: httpx.BaseTransport | None = None,
 ) -> NormalizedClaim:
     """Return retrieval fields only; log both successful and failed calls."""
-    result, error = None, None
+    result, error_type = None, None
     try:
         if not raw_text.strip() or len(raw_text) > 2000:
             raise ClaimNormalizationError("Enter one health claim of 1–2000 characters")
@@ -139,11 +139,10 @@ def normalize_claim(
         )
         return result
     except (ClaimNormalizationError, FoundryUnavailableError) as exc:
-        error = str(exc)
+        error_type = type(exc).__name__
         raise
     finally:
         logger.info("claim_normalization", extra={
-            "raw_input": raw_text,
-            "normalized_output": result.model_dump() if result else None,
-            "error": error, "provider": "azure_foundry",
+            "success": result is not None,
+            "error_type": error_type, "provider": "azure_foundry",
         })
