@@ -164,6 +164,13 @@
 
 
 
+.search__disclaimer {
+  margin: 14px auto 0;
+  max-width: 560px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .search__examples {
   display: flex;
   flex-wrap: wrap;

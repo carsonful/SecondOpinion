@@ -4,6 +4,7 @@ import NavBar, { Page } from './components/NavBar'
 import SearchScreen from './components/SearchScreen'
 import HowItWorksPage from './components/HowItWorksPage'
 import AboutPage from './components/AboutPage'
+import Footer from './components/Footer'
 import { useClaimChecker } from './hooks/useClaimChecker'
 import { useTheme } from './hooks/useTheme'
 
@@ -49,6 +50,8 @@ function App() {
           onHowItWorks={() => setPage('how-it-works')}
         />
       )}
+
+      <Footer onHowItWorks={() => setPage('how-it-works')} onAbout={() => setPage('about')} />
     </div>
   )
 }

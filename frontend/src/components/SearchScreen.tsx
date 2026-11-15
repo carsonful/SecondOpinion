@@ -120,6 +120,9 @@ export default function SearchScreen({
               </svg>
             </button>
           </form>
+          <p className="search__disclaimer">
+            Results are summaries of published research, not a diagnosis or treatment advice.
+          </p>
 
           <div className="search__examples">
             <span className="search__hand search__hand--top">{showResult ? 'try another:' : 'or try one:'}</span>

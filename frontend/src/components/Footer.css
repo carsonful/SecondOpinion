@@ -1,0 +1,61 @@
+/* Site footer. Uses the theme tokens, so it follows light and dark mode. */
+
+.site-footer {
+  border-top: 1px solid var(--divider);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.site-footer__inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 24px 40px;
+  display: grid;
+  gap: 14px;
+}
+
+.site-footer__disclaimer {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-body);
+}
+
+.site-footer__disclaimer strong {
+  color: var(--text-strong);
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+
+.site-footer__links button,
+.site-footer__links a {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.site-footer__links button:hover,
+.site-footer__links a:hover {
+  color: var(--text-strong);
+}
+
+.site-footer__links button:focus-visible,
+.site-footer__links a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.site-footer__meta {
+  margin: 0;
+}
