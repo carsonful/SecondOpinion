@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import './styles/theme.css'
-import NavBar, { Page } from './components/NavBar'
+import NavBar from './components/NavBar'
 import SearchScreen from './components/SearchScreen'
 import HowItWorksPage from './components/HowItWorksPage'
 import AboutPage from './components/AboutPage'
 import { useClaimChecker } from './hooks/useClaimChecker'
 import { useTheme } from './hooks/useTheme'
+import { Page, PageLink } from './navigation/routes'
+import { usePageNavigation } from './navigation/usePageNavigation'
 
 function App() {
   const checker = useClaimChecker()
   const { theme, toggleTheme } = useTheme()
-  const [page, setPage] = useState<Page>('home')
+  const { page, navigate } = usePageNavigation()
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -18,7 +20,12 @@ function App() {
 
   function goHome() {
     checker.reset()
-    setPage('home')
+    navigate('home')
+  }
+
+  function goToPage(next: Page) {
+    if (next === 'home') goHome()
+    else navigate(next)
   }
 
   return (
@@ -27,9 +34,7 @@ function App() {
         current={page}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onGoHome={goHome}
-        onHowItWorks={() => setPage('how-it-works')}
-        onAbout={() => setPage('about')}
+        onNavigate={goToPage}
       />
 
       {page === 'how-it-works' && <HowItWorksPage onTryIt={goHome} />}
@@ -46,8 +51,15 @@ function App() {
           verdict={checker.verdict}
           candidates={checker.candidates}
           activeClaim={checker.activeClaim}
-          onHowItWorks={() => setPage('how-it-works')}
+          onHowItWorks={() => navigate('how-it-works')}
         />
+      )}
+      {page === 'not-found' && (
+        <section className="route-not-found">
+          <h1>Page not found</h1>
+          <p>This address does not match a Second Opinion page.</p>
+          <PageLink page="home" onNavigate={goToPage}>Go to the home page</PageLink>
+        </section>
       )}
     </div>
   )
