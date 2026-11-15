@@ -48,6 +48,29 @@ cannot be reached, the backend still starts and the example buttons run a live
 search instead.
 Restart the backend after changing settings. See `.env.example` for cache options.
 
+`GET /api/health` shows which of these are working. `status` stays `"ok"` while
+the API is up, since optional services being off is not an outage:
+
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "dependencies": {
+    "azure": "configured",
+    "examples_db": "reachable",
+    "claim_cache": "not_configured"
+  }
+}
+```
+
+| Field | Values |
+| --- | --- |
+| `azure` | `configured` when all three Azure settings are set, otherwise `not_configured`. Read from settings only; no Azure call is made. |
+| `examples_db` | `not_configured`, `reachable`, or `unreachable` (a `SELECT 1` with a 2 second limit). |
+| `claim_cache` | `not_configured`, `active`, or `disabled` (configured, but the PostgreSQL layer failed and the API fell back to the in-memory cache). |
+
+The response never includes secrets, connection strings, or hostnames.
+
 ### Request limits and logging
 
 The model-backed POST routes (`/api/claims`, `/api/claims/normalize`, and
@@ -188,7 +211,7 @@ records the implementation and remaining hosting work.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | Status and API version. |
+| GET | `/api/health` | Status, API version, and the state of each optional dependency (see below). |
 | POST | `/api/claims` | Normalize a claim and retrieve deduplicated PubMed studies with PMC access status. |
 | POST | `/api/claims/normalize` | Normalize a claim without searching. |
 | GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed in relevance order. |
