@@ -1,0 +1,36 @@
+name: Deployment policies
+on:
+  pull_request:
+    paths:
+      - 'deploy/nginx/**'
+      - 'tools/check_deployment.py'
+      - 'tests/deployment/**'
+      - 'frontend/securityHeaders.ts'
+      - '.github/workflows/deployment.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nginx-contract:
+    name: HTTP and TLS deployment contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Install the reverse proxy used by the tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends nginx
+      - name: Check real HTTP and verified TLS responses
+        env:
+          NGINX_BIN: /usr/sbin/nginx
+        run: python -m unittest discover -s tests/deployment -v
