@@ -1,8 +1,10 @@
+import asyncio
 import json
 from pathlib import Path
 
 import psycopg
 from psycopg.types.json import Jsonb
+from pydantic import SecretStr
 
 from app.config import get_settings
 from app.models.examples import ExampleResult
@@ -30,6 +32,24 @@ def initialize_examples() -> None:
                 "ON CONFLICT (slug) DO NOTHING",
                 (slug, Jsonb(result.model_dump())),
             )
+
+
+async def examples_database_reachable(database_url: SecretStr, timeout: float = 2) -> bool:
+    """Run SELECT 1 against the examples database, giving up after `timeout` seconds.
+
+    Uses a sync connection in a thread because async psycopg does not work on
+    Windows' default event loop, which would report a working database as down.
+    """
+    def select_one() -> None:
+        with psycopg.connect(database_url.get_secret_value(), connect_timeout=2) as connection:
+            connection.execute("SELECT 1")
+
+    try:
+        async with asyncio.timeout(timeout):
+            await asyncio.to_thread(select_one)
+    except (psycopg.Error, OSError, TimeoutError):
+        return False
+    return True
 
 
 def get_example(slug: str) -> ExampleResult | None:
