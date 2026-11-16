@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: secondopinion
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: AZURE_INFERENCE_ENDPOINT
+        sync: false
+      - key: AZURE_MODEL_DEPLOYMENT_NAME
+        sync: false
+      - key: AZURE_INFERENCE_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: '[]'

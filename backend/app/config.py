@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     cache_database_url: SecretStr | None = None
 
     app_name: str = "SecondOpinion API"
+    frontend_dist: Path | None = None
     cors_origins: list[str] = ["http://localhost:5173"]
 
     @field_validator("cors_origins")

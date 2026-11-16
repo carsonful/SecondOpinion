@@ -13,6 +13,10 @@ calling Azure or PubMed.
 
 ## Local setup
 
+For a hosted instance, see [the Render deployment guide](docs/deployment.md).
+The root Dockerfile builds the React frontend and serves it with the Python API
+at one origin; `render.yaml` defines a manually deployed demo service.
+
 ### Backend
 
 Requires Python 3.11+.

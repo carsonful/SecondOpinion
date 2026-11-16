@@ -31,6 +31,13 @@ class SecurityHeadersMiddleware:
                         "default-src 'none'; frame-ancestors 'none'; "
                         "base-uri 'none'; form-action 'none'"
                     )
+                elif path not in {"/docs", "/docs/oauth2-redirect", "/redoc"}:
+                    headers["Content-Security-Policy"] = (
+                        "default-src 'self'; base-uri 'self'; object-src 'none'; "
+                        "frame-ancestors 'none'; form-action 'self'; script-src 'self'; "
+                        "style-src 'self' 'unsafe-inline'; font-src 'self'; "
+                        "img-src 'self' data:; connect-src 'self'"
+                    )
                 # Trust ASGI's scheme, never a raw X-Forwarded-Proto header.
                 if scope.get("scheme") == "https":
                     headers["Strict-Transport-Security"] = "max-age=31536000"

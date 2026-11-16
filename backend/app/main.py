@@ -19,6 +19,7 @@ from app.services.inference_limits import InferenceLimiter
 from app.services.pubmed import PubMedClient
 from app.services.pmc import PMCClient
 from app.services.upstream import UpstreamResponseError, UpstreamUnavailableError
+from app.frontend import FrontendFiles
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,8 @@ def create_app() -> FastAPI:
     app.include_router(claims.router, prefix="/api")
     app.include_router(examples.router, prefix="/api")
     app.include_router(crossref.router, prefix="/api")
+    if settings.frontend_dist is not None:
+        app.mount("/", FrontendFiles(directory=settings.frontend_dist))
     return app
 
 
