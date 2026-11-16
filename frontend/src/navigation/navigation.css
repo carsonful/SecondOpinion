@@ -1,0 +1,37 @@
+.skip-link {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 12px 16px;
+  color: #0b1957;
+  background: #ffffff;
+  border: 2px solid #0b1957;
+  border-radius: 8px;
+  font-weight: 700;
+  transform: translateY(-180%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline: 3px solid #176fc1;
+  outline-offset: 3px;
+}
+
+#main-content:focus,
+#main-content h1:focus {
+  outline: 3px solid var(--text-strong);
+  outline-offset: 5px;
+}
+
+.route-not-found {
+  max-width: 700px;
+  margin: 48px auto;
+  padding: 24px;
+  color: var(--text-strong);
+}
+
+.route-not-found a {
+  color: inherit;
+  text-underline-offset: 4px;
+}

@@ -114,6 +114,10 @@ The frontend runs at http://localhost:5173. Vite proxies `/api` to port 8000.
 For hosting, route `/api` to the backend and add the frontend origin to
 `CORS_ORIGINS`.
 
+Home, How it works and About have shareable URLs with browser history, page
+titles and keyboard focus management. See [navigation](docs/navigation.md)
+for direct-load hosting requirements and the browser regression suite.
+
 To check the production build locally, run `npm run build` followed by
 `npm run preview`. Preview serves the built app with the security policy in
 `frontend/securityHeaders.ts` and proxies `/api` to port 8000. The development

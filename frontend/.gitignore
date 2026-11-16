@@ -1,0 +1,3 @@
+# Local browser test output contains screenshots and traces, not source.
+/playwright-report/
+/test-results/
