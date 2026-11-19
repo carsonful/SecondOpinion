@@ -1,0 +1,20 @@
+[
+ {"bioctype": "BioCCollection", "source": "PMC", "documents": [
+  {"bioctype": "BioCDocument", "id": "unknown", "passages": [
+   {"infons": {"section_type": "TITLE", "type": "front", "article-id_pmid": "32641681", "article-id_pmc": null, "license": "Open Access This article is licensed under a Creative Commons Attribution 4.0 International License, which permits use, sharing, adaptation, distribution and reproduction in any medium or format, as long as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons license, and indicate if changes were made. The images or other third party material in this article are included in the article’s Creative Commons license, unless indicated otherwise in a credit line to the material. If material is not included in the article’s Creative Commons license and your intended use is not permitted by statutory regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/."}, "text": "Is hydroxychloroquine beneficial for COVID-19 patients?"},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "The outbreak of coronavirus disease 2019 (COVID-19) caused by severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2) was first reported in December 2019. As similar cases rapidly emerged around the world, the World Health Organization"},
+   {"infons": {"section_type": "INTRO", "type": "title_1"}, "text": "US FDA approved hydroxychloroquine (HCQ) and chloroquine (CQ) for COVID-19 as an Emergency Use Authorization (EUA) with cautions issued soon after"},
+   {"infons": {"section_type": "INTRO", "type": "paragraph"}, "text": "On March 28, 2020, the U.S. Food and Drug Administration (FDA) issued an EUA to allow hydroxychloroquine sulfate and chloroquine phosphate donated to the Strategic National Stockpile (SNS) to be distributed and used for hospitalized COVID-1"},
+   {"infons": {"section_type": "INTRO", "type": "title_2"}, "text": "HCQ exerts strong immunomodulatory effects"},
+   {"infons": {"section_type": "FIG", "type": "fig_title_caption"}, "text": "Hydroxychloroquine (HCQ) shows several potential effects against COVID-19 disease."},
+   {"infons": {"section_type": "FIG", "type": "fig_caption"}, "text": "While HCQ is likely to have the ability to control the CRS, suppress hyperactive immune responses and subsequently promote tissue repair, which leads to significantly improved severe symptoms in late-stage of COVID-19."},
+   {"infons": {"section_type": "CONCL", "type": "title_1"}, "text": "Conclusion"},
+   {"infons": {"section_type": "CONCL", "type": "paragraph"}, "text": "Taken together, given the fast-increasing number of COVID-19 patients and the urgent need for effective and safe drugs in the clinic, CQ and HCQ have potential, but controversial, characteristics to combat pathological inflammation associat"},
+   {"infons": {"section_type": "CONCL", "type": "footnote"}, "text": "Edited by R.A. Knight"},
+   {"infons": {"section_type": "COMP_INT", "type": "title"}, "text": "Conflict of interest"},
+   {"infons": {"section_type": "COMP_INT", "type": "paragraph"}, "text": "The authors declare that they have no conflict of interest."},
+   {"infons": {"section_type": "REF", "type": "title"}, "text": "References"},
+   {"infons": {"section_type": "REF", "type": "ref"}, "text": "COVID-19: a promising cure for the global panic"}
+  ]}
+ ]}
+]

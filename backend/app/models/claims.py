@@ -2,11 +2,12 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
+from app.models.crossref import IntegrityNotice
 from app.models.normalization import NormalizedClaim
 from app.models.metadata import StudyMetadata
-from app.models.full_text import EvidenceCoverage, FullTextAccess
+from app.models.full_text import EvidenceCoverage, FullTextAccess, PMCDocument
 from app.models.pubmed import PubMedArticle
 
 
@@ -18,6 +19,7 @@ class ClaimRequest(BaseModel):
         description="One raw health-effect claim or question; surrounding whitespace is removed.",
         examples=["Does zinc help with the common cold?"],
     )
+    pmc_only: bool = Field(default=False, description="Restrict search to studies in PubMed Central.")
     limit: int = Field(
         default=20, ge=1, le=100,
         description="Maximum PubMed records to retrieve before deduplication; fewer candidates may be returned.",
@@ -31,14 +33,31 @@ class ClaimRequest(BaseModel):
         return value.strip()
 
 
+class CandidateIntegrity(BaseModel):
+    """Retraction, correction, and concern notices for one study, from Crossref and PubMed.
+
+    A notice is a fact about the paper, not a grade. Retracted studies are left out
+    of `candidates` and listed in `excluded_retracted` instead.
+    """
+
+    status: Literal["retracted", "expression_of_concern", "corrected", "no_notice_found", "unchecked"]
+    label: str
+    notices: list[IntegrityNotice]
+
+
 class CandidateStudy(BaseModel):
+    # Server-only source material; never included in API or persistent-cache payloads.
+    _document: PMCDocument | None = PrivateAttr(default=None)
     article: PubMedArticle
     metadata: StudyMetadata
     access: FullTextAccess
+    integrity: CandidateIntegrity
 
 
 class ClaimCandidates(BaseModel):
+    pmc_only: bool = False
     status: Literal["candidates"] = "candidates"
+    analysis_id: str | None = Field(default=None, description="Temporary token for an overview of this exact search snapshot.")
     claim: str
     normalized: NormalizedClaim
     query_translation: str | None
@@ -51,4 +70,8 @@ class ClaimCandidates(BaseModel):
     # PubMed relevance order, after deduplication. Not a quality ranking.
     candidates: list[CandidateStudy] = Field(
         description="Deduplicated studies in PubMed relevance order, with study-design metadata and full-text access details. No grades, scores, or verdicts are assigned.",
+    )
+    excluded_retracted: list[CandidateStudy] = Field(
+        default_factory=list,
+        description="Studies left out of candidates because Crossref or PubMed reports them retracted, with their notices.",
     )

@@ -28,6 +28,13 @@ text, abstract-only records, and citation-only records. Each candidate contains:
 - `metadata`: study design label.
 - `access`: `level` (`full_text`, `abstract_only`, or `metadata_only`), reason,
   detail, PMC ID/link, license, and retrieved body section names.
+- `integrity`: retraction, correction, and expression-of-concern notices from
+  Crossref and PubMed, with a `status` (`expression_of_concern`, `corrected`,
+  `no_notice_found`, or `unchecked`), a label, and notice links.
+
+Retracted studies are not included in `candidates` or `coverage`. They are
+listed in `excluded_retracted`, with their retraction notices, so a client can
+say what was removed.
 
 The UI uses a color and letter beside the study type as a quick identifier.
 These marks describe design categories, not quality. See the [study type key](study-guide.md).
@@ -115,3 +122,118 @@ normalization of uncached claims. PostgreSQL is optional for claim search; saved
 verdict examples use `DATABASE_URL` separately. The local Vite server proxies
 `/api` to port 8000. A hosted
 frontend needs `/api` routed to the backend and its origin in `CORS_ORIGINS`.
+
+## Automatic research overview
+
+Each candidate's `metadata` includes `design` and `population` (`human`, `animal`,
+`in_vitro`, or `unknown`). Population comes from explicit MeSH descriptors, not the
+publication type or an inferred participant population. Lab descriptors take
+precedence; otherwise `Humans` wins for mixed human/animal records, then `Animals`.
+Missing indexing means `unknown`. See [the study guide](study-guide.md) for the
+descriptor list and limitations. The same field is returned on excluded studies.
+
+Persistent claim-cache format v3 invalidates pre-population entries. Restart the
+backend on deployment to clear older in-memory snapshots/results. Older manual
+JSON payloads without population remain readable with `unknown`; to obtain an
+indexed label, refresh the search. Overview version `source-overview-v5-recovery`
+also invalidates prior readings and syntheses. Both reading and synthesis prompts
+receive population metadata and must not generalize animal/lab findings to people.
+
+`POST /api/claims` additionally returns `pmc_only` and `analysis_id`, an opaque, temporary identifier
+for the server's exact search snapshot. The live results page calls
+`POST /api/claims/overview/{analysis_id}` automatically, without resubmitting source text.
+Unknown or expired IDs return 410; overall timeouts return 503. Snapshots last one hour
+in the current backend process; refresh the search to obtain another ID.
+
+### Overview error responses
+
+These responses are declared on the overview operation in `/openapi.json` and
+shown in the interactive `/docs` page:
+
+| Code | Meaning | Recovery |
+| --- | --- | --- |
+| 410 | The search snapshot is unknown or expired, including after a server restart. | Refresh the search to obtain a new `analysis_id`. Retrying the expired ID will not restore it. |
+| 503 | The overall overview operation exceeded its timeout. | Retry the overview; the already retrieved studies remain available. |
+
+Both errors use the standard JSON `detail` field. A timeout does not delete the
+search snapshot or its papers. A partial model/provider failure can instead be
+represented in a successful overview body with `partial` or `unavailable` status;
+it is distinct from the route's overall timeout response.
+
+The overview returns `basis` (`"abstracts"`, `"full_text"`, or `"mixed"`), `status` (`complete`, `partial`,
+`unavailable`, or `insufficient_information`), `coverage`, `studies`, `synthesis`,
+and `cached`. `complete` means analysis completed for eligible sources, not that the
+search covers all relevant research. Per-study statuses are `analyzed`, `no_abstract`,
+`withheld`, `failed`, and `outside_limit`. Successful explanations contain `summary`
+and `relationship` (each has `text` and a verbatim `passage`), `relevance` (`direct`,
+`related`, `not_addressed`, `unclear`), and `gaps`. Relevance is not agreement or quality.
+
+Synthesis observations and qualifications contain `text` and `pmids`; IDs must refer
+to successfully analyzed sources. Coverage counts are computed in code. No-abstract,
+withheld, failed, and outside-limit records are not included in the synthesis.
+Retractions remain in the search response's `excluded_retracted` list. Corrections
+and expressions of concern are withheld pending resolution. Only the first 20
+retained papers are considered for analysis. With `pmc_only: true`, verified PMC
+body text is analyzed instead of the abstract. Text beyond 120,000 characters or
+unavailable text falls back to the abstract with an explicit `source_note`.
+Abstracts beyond 30,000 characters are not analyzed. Text is never silently truncated.
+Each reading reports `source_basis` (`full_text`, `abstract`, or null when no source
+was selected). Coverage includes `full_text` and `abstracts` counts of successful
+readings. Source text is divided into numbered excerpts of at most 1,500
+characters. The model selects excerpt IDs; the server rejects unknown IDs and
+inserts the original text into the returned `passage` fields. These checks establish
+provenance, not the semantic accuracy of the explanation. Full article
+bodies stay in server-side snapshots, not API or PostgreSQL payloads. Cached PMC
+access metadata is rehydrated with verified documents before analysis. Cache keys
+include search mode and source contents; broad searches always analyze abstracts.
+Partial failures are not cached as finished overviews; successful readings can be
+reused on retry. Concurrent overview requests share the same work.
+
+### Analysis recovery
+
+Transient provider failures (429, server errors, connection failures, and timeouts)
+are retried up to three total attempts, with backoff and numeric `Retry-After`
+handling. Cooldowns over 30 seconds are reported without retrying early.
+Invalid output or an unknown source excerpt gets one corrective attempt. A failed
+full-text reading tries a usable abstract, except for configuration/authentication
+failures or exhausted rate limits. Successful fallbacks are labeled; they are not
+cached as finished overviews, allowing a retry to recover full-text analysis.
+
+Requests allow 60 seconds of network inactivity, with a 75-second reading-attempt
+budget. Four studies can be analyzed concurrently. At the 240-second reading-phase
+deadline, unfinished studies receive explicit failure reasons while completed
+readings remain available for synthesis and retry. Synthesis has a 65-second budget;
+the shared overview is bounded at 320 seconds (the route allows 325 seconds).
+Provider/configuration errors, missing text, quote-selection failures, and deadlines
+have distinct user-facing explanations. Raw provider errors and credentials are
+never returned.
+
+The raw-milk PMC regression check used the same 20 retrieved studies before and
+after this change. It improved from 7 analyzed / 10 failed / 3 without usable text
+to 17 analyzed / 0 failed / 3 without usable text (16 full-text readings, 1 abstract).
+This live run verifies recovery for that result set, not a guarantee of future
+provider availability or explanation accuracy.
+
+### Search scope
+
+`POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; overviews use full text in PMC-only mode and abstracts in broader mode. Cache entries are separated by the actual search query.
+
+The search-page information button explains the coverage and retrieval-time tradeoff. Example buttons run a live search with the selected scope instead of loading a saved verdict that may have a different scope. Refresh retains the scope of the displayed search.
+
+## Inbound request limit
+
+`POST /api/claims`, `POST /api/claims/normalize`, and
+`POST /api/claims/overview/{analysis_id}` share a per-client, per-process token
+bucket. The default burst is 10 requests, refilling at 10 per minute. Cached
+requests and failed attempts count. Rejected requests return HTTP `429` with
+`{"detail":"Too many research requests. Please wait before trying again."}`
+and a positive integer `Retry-After` header (seconds). Papers already retrieved
+remain usable; retry the overview after the indicated wait.
+
+Provider/configuration failures during claim normalization return HTTP `503`
+with `{"detail":"Inference service unavailable. Try again shortly."}`.
+Service-level claim rejection returns `422` with
+`{"detail":"Enter one clear health-effect claim"}`. Request schema validation
+continues to use FastAPI's validation response. Provider exception messages and
+configuration names are not included in these public service-error responses.
+See the README for proxy trust, configuration, logging, and scaling limits.

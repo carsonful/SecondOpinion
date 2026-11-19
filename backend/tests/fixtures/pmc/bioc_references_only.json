@@ -1,0 +1,11 @@
+[
+ {"bioctype": "BioCCollection", "source": "PMC", "documents": [
+  {"bioctype": "BioCDocument", "id": "unknown", "passages": [
+   {"infons": {"section_type": "TITLE", "type": "front", "article-id_pmid": "33154234", "article-id_pmc": null, "license": "Since January 2020 Elsevier has created a COVID-19 resource centre with free information in English and Mandarin on the novel coronavirus COVID-19. The COVID-19 resource centre is hosted on Elsevier Connect, the company's public news and information website. Elsevier hereby grants permission to make all its COVID-19-related research that is available on the COVID-19 resource centre - including this research content - immediately available in PubMed Central and other publicly funded repositories, such as the WHO COVID database with rights for unrestricted research re-use and analyses in any form or by any means with acknowledgement of the original source. These permissions are granted for free by Elsevier for as long as the COVID-19 resource centre remains active."}, "text": "Effect of Chloroquine and Hydroxychloroquine on COVID-19 Virological Outcomes: An Updated Meta-Analysis"},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract_title_1"}, "text": "Abstract"},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "As anti-malarial drugs have been found to inhibit Corona viruses in vitro, studies have evaluated the effect of these drugs inCOVID-19 infection. We conducted an updated meta-analysis of clinical trials and observational studies published t"},
+   {"infons": {"section_type": "REF", "type": "title"}, "text": "References"},
+   {"infons": {"section_type": "REF", "type": "ref"}, "text": ""}
+  ]}
+ ]}
+]

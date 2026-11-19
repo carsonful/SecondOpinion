@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import Clipboard from './how/Clipboard'
 import NormalizeDemo from './how/NormalizeDemo'
-import GradingDemo from './how/GradingDemo'
+import StudyTypeDemo from './how/StudyTypeDemo'
 import RetractionDemo from './how/RetractionDemo'
 import './HowItWorksPage.css'
 
@@ -12,21 +12,18 @@ interface HowItWorksPageProps {
 export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
   // Each clipboard gets its stamp once its demo has been run
   const [normalized, setNormalized] = useState(false)
-  const [graded, setGraded] = useState(false)
+  const [classified, setClassified] = useState(false)
   const [screened, setScreened] = useState(false)
-  const onNormalized = useCallback((d: boolean) => setNormalized(d), [])
-  const onGraded = useCallback((d: boolean) => setGraded(d), [])
-  const onScreened = useCallback((d: boolean) => setScreened(d), [])
 
   return (
     <div className="how">
       <header className="how__hero">
-        <p className="how__eyebrow glass-pill">Three checks, every claim</p>
+        <p className="how__eyebrow glass-pill">Explore the evidence</p>
         <h1 className="how__headline">How it works</h1>
-        <span className="how__hand how__hand--lead">every claim gets a full checkup</span>
+        <span className="how__hand how__hand--lead">from a question to related studies</span>
         <p className="how__subhead">
-          Your claim goes in the top, runs through three lab tests, and comes out the bottom as a verdict you can
-          trust. Try each test yourself.
+          Claim search turns your question into a PubMed query and shows related studies, their designs, and
+          available abstracts or PMC full text. Try the examples below, including a preview of planned integrity screening.
         </p>
       </header>
 
@@ -57,7 +54,7 @@ export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
               stamped={normalized}
               tilt={-1}
             >
-              <NormalizeDemo onStatusChange={onNormalized} />
+              <NormalizeDemo onStatusChange={setNormalized} />
             </Clipboard>
           </div>
           <div className="how__node how__node--1" aria-hidden="true">
@@ -77,24 +74,24 @@ export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
           <div className="how__station-board">
             <Clipboard
               label="LAB REPORT · TEST 02"
-              title="EVIDENCE GRADING"
-              stamp="GRADED"
+              title="STUDY TYPE"
+              stamp="CLASSIFIED"
               tone="blue"
-              stamped={graded}
+              stamped={classified}
               tilt={1}
             >
-              <GradingDemo onStatusChange={onGraded} />
+              <StudyTypeDemo onStatusChange={setClassified} />
             </Clipboard>
           </div>
           <div className="how__node how__node--2" aria-hidden="true">
             2
           </div>
           <div className="how__station-info glass-card">
-            <span className="how__hand">“how good is the evidence?”</span>
-            <h2>Evidence grading</h2>
+            <span className="how__hand">“what kind of study is this?”</span>
+            <h2>Study types</h2>
             <p>
-              Every study gets a category from how it was done, so a blog-cited case report can’t outweigh a trial.
-              Animal studies and preprints are kept separate.
+              Study labels describe the research design, such as a trial, review, or case report. They help you read
+              the results, but do not establish study quality or whether the claim is true. The demo also illustrates publication flags.
             </p>
           </div>
         </div>
@@ -109,7 +106,7 @@ export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
               stamped={screened}
               tilt={-0.8}
             >
-              <RetractionDemo onStatusChange={onScreened} />
+              <RetractionDemo onStatusChange={setScreened} />
             </Clipboard>
           </div>
           <div className="how__node how__node--3" aria-hidden="true">
@@ -117,10 +114,10 @@ export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
           </div>
           <div className="how__station-info glass-card">
             <span className="how__hand">“can we still trust it?”</span>
-            <h2>Retraction checks</h2>
+            <h2>Retraction checks · preview</h2>
             <p>
-              Some viral claims trace back to papers that were later pulled. Every source is screened for retractions
-              and integrity notices, and we show you the notice instead of hiding it.
+              This sample shows how retractions, corrections, and concerns could be displayed. Crossref notice lookup
+              is available separately; automatic integrity screening is planned for a future claim-search release.
             </p>
           </div>
         </div>
@@ -135,8 +132,8 @@ export default function HowItWorksPage({ onTryIt }: HowItWorksPageProps) {
         <div className="how__capsule-seam" />
         <div className="how__capsule-half how__capsule-half--verdict">
           <div>
-            <strong>Refuted</strong>
-            <span>Busted myth</span>
+            <strong>Related studies</strong>
+            <span>Study types, abstracts, and access</span>
           </div>
           <button type="button" className="how__cta" onClick={onTryIt}>
             Check a claim →

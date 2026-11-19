@@ -1,14 +1,11 @@
-import { FormEvent, useEffect, useRef } from 'react'
+import { FormEvent, useEffect, useRef, useId, useState } from 'react'
 import { Status } from '../hooks/useClaimChecker'
-import { VerdictData } from '../types'
+import { ClaimCandidates, VerdictData } from '../types'
+import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
 import VerdictResult from './result/VerdictResult'
+import CandidateResults from './result/CandidateResults'
+import LoadingTips from './LoadingTips'
 import './SearchScreen.css'
-
-const EXAMPLE_CLAIMS = [
-  'Is raw milk better for you than pasteurized?',
-  'Do cold showers boost your immune system?',
-  'Does cracking your knuckles cause arthritis?',
-]
 
 const CAP_COLORS = [
   'linear-gradient(135deg,#3d8ed6,#2a6cb8)',
@@ -18,17 +15,20 @@ const CAP_COLORS = [
 
 const CHECKS = [
   { title: 'Claim normalization', text: 'Understands what you’re actually asking', cap: '#2a6cb8' },
-  { title: 'Evidence grading', text: 'Every study graded by how it was done', cap: '#D6B482' },
-  { title: 'Retraction checks', text: 'Pulled papers never make it in', cap: '#0B1957' },
+  { title: 'Study types', text: 'Learn what each design can tell you', cap: '#D6B482' },
+  { title: 'PMC full text', text: 'See whether the full text is available', cap: '#0B1957' },
 ]
 
 interface SearchScreenProps {
+  pmcOnly: boolean
+  setPmcOnly: (value: boolean) => void
   claim: string
   setClaim: (value: string) => void
   status: Status
   errorMessage: string
-  checkClaim: (text: string) => void
+  checkClaim: (text: string, refresh?: boolean) => void
   verdict: VerdictData | null
+  candidates: ClaimCandidates | null
   activeClaim: string
   onHowItWorks?: () => void
 }
@@ -38,17 +38,22 @@ interface SearchScreenProps {
  * dark mode); the bottom, where the result appears, is always light.
  */
 export default function SearchScreen({
+  pmcOnly,
+  setPmcOnly,
   claim,
   setClaim,
   status,
   errorMessage,
   checkClaim,
   verdict,
+  candidates,
   activeClaim,
   onHowItWorks,
 }: SearchScreenProps) {
+  const [showSearchInfo, setShowSearchInfo] = useState(false)
+  const searchInfoId = useId()
   const resultRef = useRef<HTMLDivElement>(null)
-  const showResult = status === 'success' && verdict
+  const showResult = status === 'success' && Boolean(verdict || candidates)
 
   // Bring the result into view when it arrives
   useEffect(() => {
@@ -66,7 +71,7 @@ export default function SearchScreen({
   }
 
   const examples = EXAMPLE_CLAIMS.filter(
-    (c) => !(showResult && c.toLowerCase() === activeClaim.toLowerCase()),
+    ({ claim: text }) => !(showResult && text.toLowerCase() === activeClaim.toLowerCase()),
   )
 
   return (
@@ -80,9 +85,21 @@ export default function SearchScreen({
             actually true?
           </h1>
           <p className="search__subhead">
-            Paste any health claim and get a science-backed verdict, graded evidence, and sources you can
-            trust.
+            Search a health claim to explore related studies, learn their designs, and open the available sources.
           </p>
+
+          <div className="search__options">
+            <label className="search__toggle">
+              <input type="checkbox" role="switch" checked={pmcOnly} disabled={status === 'loading'} onChange={event => setPmcOnly(event.target.checked)} />
+              <span>PubMed Central only</span>
+            </label>
+            <button type="button" className="search__info" aria-label="About PubMed Central only" aria-expanded={showSearchInfo} aria-controls={searchInfoId} onClick={() => setShowSearchInfo(value => !value)}>i</button>
+            <div id={searchInfoId} hidden={!showSearchInfo} className="search__info-panel">
+              <p><strong>On:</strong> Search only studies with full text in PubMed Central. Checking full text may take longer and can provide more detail, but this smaller collection may return few or no studies for your question.</p>
+              <p><strong>Off:</strong> Search all of PubMed, including studies available only as abstracts or citations. You can view abstracts, study types, journal details, and source links.</p>
+              <p>With PMC only enabled, the overview analyzes retrieved full text when available and labels any abstract fallbacks. With it off, the overview uses abstracts. This choice applies to your next search.</p>
+            </div>
+          </div>
 
           <form className="search__capsule" onSubmit={handleSubmit} role="search">
             <label className="search__capsule-input glass-card">
@@ -91,6 +108,7 @@ export default function SearchScreen({
                 type="text"
                 placeholder='Try "is raw milk better than pasteurized?"'
                 value={claim}
+                maxLength={2000}
                 onChange={(e) => setClaim(e.target.value)}
               />
             </label>
@@ -105,15 +123,15 @@ export default function SearchScreen({
 
           <div className="search__examples">
             <span className="search__hand search__hand--top">{showResult ? 'try another:' : 'or try one:'}</span>
-            {examples.map((text) => (
+            {examples.map(({ slug, claim: text }) => (
               <button
-                key={text}
+                key={slug}
                 type="button"
                 className="search__chip search__chip--top"
                 onClick={() => pick(text)}
               >
                 <span>{text}</span>
-                <span style={{ background: CAP_COLORS[EXAMPLE_CLAIMS.indexOf(text)] }} />
+                <span style={{ background: CAP_COLORS[EXAMPLE_CLAIMS.findIndex((item) => item.slug === slug)] }} />
               </button>
             ))}
           </div>
@@ -127,7 +145,7 @@ export default function SearchScreen({
               <span className="search__spinner" aria-hidden="true" />
               <div>
                 <p className="search__status-title">Checking “{claim}”</p>
-                <p className="search__status-sub">Pulling studies and grading the evidence…</p>
+                <LoadingTips />
               </div>
             </div>
           )}
@@ -138,12 +156,14 @@ export default function SearchScreen({
               <p className="search__status-sub">
                 Try rephrasing with more specific terms, like the ingredient or condition involved.
               </p>
+              <button type="button" onClick={() => checkClaim(claim)}>Try again</button>
             </div>
           )}
 
           {showResult && verdict && (
-            <VerdictResult verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
+            <VerdictResult key={activeClaim} verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
           )}
+          {showResult && candidates && <CandidateResults result={candidates} onRefresh={() => checkClaim(activeClaim, true)} />}
 
           {status === 'idle' && (
             <div className="checks">

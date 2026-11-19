@@ -1,0 +1,26 @@
+[
+ {"bioctype": "BioCCollection", "source": "PMC", "documents": [
+  {"bioctype": "BioCDocument", "id": "PMC8844493", "passages": [
+   {"infons": {"section_type": "TITLE", "type": "front", "article-id_pmc": "PMC8844493", "license": "This is an open-access article distributed under the terms of the Creative Commons Attribution License (CC BY). The use, distribution or reproduction in other forums is permitted, provided the original author(s) and the copyright owner(s) are credited and that the original publication in this journal is cited, in accordance with accepted academic practice. No use, distribution or reproduction is permitted which does not comply with these terms."}, "text": "Quantile Treatment Effect of Zinc Lozenges on Common Cold Duration: A Novel Approach to Analyze the Effect of Treatment on Illness Duration"},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "Calculation of the difference of means is the most common approach when analyzing treatment effects on continuous outcomes. Nevertheless, it is possible that the treatment has a different effect on patients who have a lower value of the out"},
+   {"infons": {"section_type": "INTRO", "type": "title_1"}, "text": "Introduction"},
+   {"infons": {"section_type": "INTRO", "type": "paragraph"}, "text": "Evaluation of the effects of a particular drug or other medical intervention should not focus only on the average effect. There may be heterogeneity in the effect on an outcome not only with respect to some baseline variables, but also with"},
+   {"infons": {"section_type": "METHODS", "type": "title_1"}, "text": "Methods"},
+   {"infons": {"section_type": "METHODS", "type": "title_2"}, "text": "Data of the Included Trials"},
+   {"infons": {"section_type": "METHODS", "type": "paragraph"}, "text": "  published their findings as survival curves. The numbers of common cold patients recovering each day were measured and are available. The data sets of the three RCTs on zinc acetate lozenges were provided by the authors of the trials and "},
+   {"infons": {"section_type": "RESULTS", "type": "title_1"}, "text": "Results"},
+   {"infons": {"section_type": "RESULTS", "type": "paragraph"}, "text": "The characteristics of the participants and the contexts of the trials are described in the trial reports, and were summarized in previous analyses. In brief, all trials were randomized and placebo controlled. studied employees of the Cleve"},
+   {"infons": {"section_type": "FIG", "type": "fig_caption"}, "text": "Recovery from the common cold and illustration of the quantile treatment effect (QTE) in the trial. The sizes of the steps downwards indicate the number of patients who recovered on a particular day. The red horizontal dotted lines indicate"},
+   {"infons": {"section_type": "DISCUSS", "type": "title_1"}, "text": "Discussion"},
+   {"infons": {"section_type": "DISCUSS", "type": "paragraph"}, "text": "When randomized trials are planned, minimum sample size calculations are carried out to ensure that the trial will have sufficient power to yield meaningful information. Sample size calculations are usually based on an assumed uniform effec"},
+   {"infons": {"section_type": "SUPPL", "type": "title_1"}, "text": "Data Availability Statement"},
+   {"infons": {"section_type": "SUPPL", "type": "paragraph"}, "text": "The original contributions presented in the study are included in the article/Supplementary Material. Further inquiries can be directed to the corresponding author."},
+   {"infons": {"section_type": "AUTH_CONT", "type": "title_1"}, "text": "Author Contributions"},
+   {"infons": {"section_type": "AUTH_CONT", "type": "paragraph"}, "text": "HH planned the study and wrote a draft for the manuscript, HH and JT carried out the statistical analyses, all authors participated in the revision of the manuscript."},
+   {"infons": {"section_type": "COMP_INT", "type": "title_1"}, "text": "Conflict of Interest"},
+   {"infons": {"section_type": "COMP_INT", "type": "paragraph"}, "text": "The authors declare that the research was conducted in the absence of any commercial or financial relationships that could be construed as a potential conflict of interest."},
+   {"infons": {"section_type": "REF", "type": "title"}, "text": "References"},
+   {"infons": {"section_type": "REF", "type": "ref"}, "text": "Within Trial Variation-A False Trail?"}
+  ]}
+ ]}
+]

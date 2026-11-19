@@ -1,16 +1,13 @@
 import logoMark from '../assets/so-logo-mark.png'
 import { Theme } from '../hooks/useTheme'
+import { CurrentPage, Page, PageLink } from '../navigation/routes'
 import './NavBar.css'
 
-export type Page = 'home' | 'how-it-works' | 'about'
-
 interface NavBarProps {
-  current: Page
+  current: CurrentPage
   theme: Theme
   onToggleTheme: () => void
-  onGoHome: () => void
-  onHowItWorks: () => void
-  onAbout: () => void
+  onNavigate: (page: Page) => void
 }
 
 function SunIcon() {
@@ -40,28 +37,28 @@ function MoonIcon() {
   )
 }
 
-export default function NavBar({ current, theme, onToggleTheme, onGoHome, onHowItWorks, onAbout }: NavBarProps) {
+export default function NavBar({ current, theme, onToggleTheme, onNavigate }: NavBarProps) {
   const next = theme === 'dark' ? 'light' : 'dark'
   return (
     <header className="navbar">
-      <button type="button" className="navbar__brand" onClick={onGoHome} aria-label="Second Opinion home">
+      <PageLink page="home" onNavigate={onNavigate} className="navbar__brand" aria-label="Second Opinion home" aria-current={current === 'home' ? 'page' : undefined}>
         <img src={logoMark} alt="" className="navbar__logo" />
         <span className="navbar__wordmark">
           <span className="navbar__script">Second</span>
           <span className="navbar__caps">OPINION</span>
         </span>
-      </button>
-      <nav className="navbar__links">
-        <button
-          type="button"
-          onClick={onHowItWorks}
+      </PageLink>
+      <nav className="navbar__links" aria-label="Main navigation">
+        <PageLink
+          page="how-it-works"
+          onNavigate={onNavigate}
           aria-current={current === 'how-it-works' ? 'page' : undefined}
         >
           How it works
-        </button>
-        <button type="button" onClick={onAbout} aria-current={current === 'about' ? 'page' : undefined}>
+        </PageLink>
+        <PageLink page="about" onNavigate={onNavigate} aria-current={current === 'about' ? 'page' : undefined}>
           About
-        </button>
+        </PageLink>
         <button
           type="button"
           className={`navbar__theme navbar__theme--${theme} glass-pill`}

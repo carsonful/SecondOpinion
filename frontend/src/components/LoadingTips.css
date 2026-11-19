@@ -1,0 +1,22 @@
+.loading-tips { display: flex; flex-direction: column; }
+.loading-tips__verb { margin-top: 4px; animation: loading-tip-in 0.35s ease both; }
+.loading-tips__tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 5.6em;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(47, 102, 144, 0.35);
+  animation: loading-tip-in 0.45s ease both;
+}
+.loading-tips__tip p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-body); }
+.loading-tips__stat { margin-right: 8px; font-size: 22px; line-height: 1; color: var(--text-strong); }
+@keyframes loading-tip-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-tips__verb, .loading-tips__tip { animation: none; }
+}
+.search__status > div:has(> .loading-tips) { flex: 1; min-width: 0; }

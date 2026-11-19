@@ -1,0 +1,18 @@
+[
+ {"bioctype": "BioCCollection", "source": "PMC", "documents": [
+  {"bioctype": "BioCDocument", "id": "6768751", "passages": [
+   {"infons": {"section_type": "TITLE", "type": "front", "article-id_pmid": "30986133", "article-id_pmc": "6768751", "license": "\n          This file is available for text mining. It may also be used consistent with the principles of fair use under the copyright law.\n        "}, "text": "Placeholder title text."},
+   {"infons": {"section_type": "ABSTRACT", "type": "abstract"}, "text": "Placeholder abstract text."},
+   {"infons": {"section_type": "INTRO", "type": "title_1"}, "text": "Placeholder intro text."},
+   {"infons": {"section_type": "INTRO", "type": "paragraph"}, "text": "Placeholder intro text."},
+   {"infons": {"section_type": "INTRO", "type": "title_2"}, "text": "Placeholder intro text."},
+   {"infons": {"section_type": "INTRO", "type": "footnote"}, "text": "Placeholder intro text."},
+   {"infons": {"section_type": "REF", "type": "title"}, "text": "Placeholder ref text."},
+   {"infons": {"section_type": "REF", "type": "ref"}, "text": "Placeholder ref text."},
+   {"infons": {"section_type": "FIG", "type": "fig_caption"}, "text": "Placeholder fig text."},
+   {"infons": {"section_type": "TABLE", "type": "table_caption"}, "text": "Placeholder table text."},
+   {"infons": {"section_type": "TABLE", "type": "table"}, "text": "Placeholder table text."},
+   {"infons": {"section_type": "TABLE", "type": "table_footnote"}, "text": "Placeholder table text."}
+  ]}
+ ]}
+]

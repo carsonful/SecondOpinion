@@ -183,7 +183,7 @@ body {
   background: #060F27;
   color: var(--ink);
   font-family: var(--font-sans);
-  /* Comfortaa is loaded at 500/600/700 only (see index.html), so body text
+  /* Local Comfortaa supports weights 500–700 (see /fonts/fonts.css), so body text
      is set to 500 explicitly instead of relying on the browser's fallback. */
   font-weight: 500;
   -webkit-font-smoothing: antialiased;

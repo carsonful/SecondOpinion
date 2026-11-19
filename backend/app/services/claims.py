@@ -9,12 +9,15 @@ from psycopg.conninfo import conninfo_to_dict
 
 from starlette.concurrency import run_in_threadpool
 
-from app.models.claims import CandidateStudy, ClaimCandidates
+from app.models.claims import CandidateIntegrity, CandidateStudy, ClaimCandidates
 from app.models.full_text import EvidenceCoverage
 from app.models.normalization import NormalizedClaim
+from app.models.pubmed import PubMedArticle
 from app.config import Settings
 from app.services.cache import TTLCache, canonical_claim_key
+from app.services.crossref import CrossrefClient, InvalidDoiError, normalize_doi
 from app.services.durable_cache import PostgresClaimsCache
+from app.services.integrity import assess_integrity
 from app.services.metadata import extract_metadata
 from app.services.normalization import normalize_claim
 from app.services.pubmed import PubMedClient
@@ -101,10 +104,20 @@ class ClaimsCache:
                 self._disable_persistent()
 
 
+def article_doi(article: PubMedArticle) -> str | None:
+    if article.doi:
+        try:
+            return normalize_doi(article.doi)
+        except InvalidDoiError:
+            pass
+    return None
+
+
 async def retrieve_candidates(
     claim: str, limit: int, pubmed: PubMedClient,
     cache: ClaimsCache | None = None, refresh: bool = False,
-    pmc: PMCClient | None = None,
+    pmc: PMCClient | None = None, crossref: CrossrefClient | None = None,
+    pmc_only: bool = False,
 ) -> ClaimCandidates:
     """With `refresh`, skip cached values but still store the fresh result."""
     raw_key = canonical_claim_key(claim)
@@ -114,12 +127,30 @@ async def retrieve_candidates(
         if cache is not None:
             await cache.put_normalized(raw_key, normalized)
 
-    results_key = (normalized.query, limit)
+    search_query = f'({normalized.query}) AND "pubmed pmc"[sb]' if pmc_only else normalized.query
+    results_key = (search_query, limit)
     cached = None if cache is None or refresh else await cache.get_candidates(results_key)
     if cached is not None:
-        return cached.model_copy(update={"claim": claim, "normalized": normalized, "cached": True})
+        result = cached.model_copy(deep=True, update={"claim": claim, "normalized": normalized, "cached": True, "pmc_only": pmc_only})
+        # Persistent cache payloads contain access metadata, not article bodies.
+        # Restore verified documents before registering the analysis snapshot.
+        if pmc_only and pmc is not None:
+            async def restore(study):
+                if study._document is None and study.access.level == "full_text":
+                    result.cached = False
+                    text = await pmc.retrieve(study.article)
+                    study._document = text.document
+                    study.access = text.access
+            await asyncio.gather(*(restore(study) for study in result.candidates))
+            result.coverage = EvidenceCoverage(
+                retrieved_studies=len(result.candidates),
+                full_text_available=sum(c.access.level == "full_text" for c in result.candidates),
+                abstract_only=sum(c.access.level == "abstract_only" for c in result.candidates),
+                metadata_only=sum(c.access.level == "metadata_only" for c in result.candidates),
+            )
+        return result
 
-    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, refresh)
+    retrieved = await _retrieve(claim, normalized, limit, pubmed, pmc, crossref, refresh, search_query, pmc_only)
     if cache is not None and retrieved.complete:
         await cache.put_candidates(results_key, retrieved.candidates)
     return retrieved.candidates
@@ -128,22 +159,26 @@ async def retrieve_candidates(
 @dataclass
 class _Retrieved:
     candidates: ClaimCandidates
-    # Failed PMC attempts aren't cached, so refresh or a later search can retry.
+    # Temporary PMC or Crossref failures aren't cached, so refresh or a later search
+    # can retry instead of leaving studies "unchecked" until the cache expires.
+    # parse_failed is cached: PMC returns the same document each time, so retrying
+    # would fail the same way and the claim would never be cached at all.
     complete: bool
 
 
 async def _retrieve(
     claim: str, normalized: NormalizedClaim, limit: int,
     pubmed: PubMedClient,
-    pmc: PMCClient | None, refresh: bool,
+    pmc: PMCClient | None, crossref: CrossrefClient | None, refresh: bool,
+    search_query: str, pmc_only: bool,
 ) -> _Retrieved:
-    results = await pubmed.search(normalized.query, limit)
+    results = await pubmed.search(search_query, limit)
     # Deduplicate PubMed aliases by PMID and DOI, keeping the first ranked record.
     seen_pmids: set[str] = set()
     seen_dois: set[str] = set()
     articles = []
     for article in results.articles:
-        doi = article.doi.casefold() if article.doi else None
+        doi = article_doi(article)
         duplicate = article.pmid in seen_pmids or (doi is not None and doi in seen_dois)
         seen_pmids.add(article.pmid)
         if doi:
@@ -152,30 +187,57 @@ async def _retrieve(
             articles.append(article)
 
     # Retrieval errors affect coverage, not whether the PubMed record is shown.
-    if pmc is not None:
-        texts = await asyncio.gather(*(
-            pmc.retrieve(article, refresh=refresh) for article in articles
-        ))
-    else:
-        texts = [
+    async def retrieve_texts():
+        if pmc is not None:
+            return await asyncio.gather(*(
+                pmc.retrieve(article, refresh=refresh) for article in articles
+            ))
+        return [
             unavailable(
                 article, "request_failed",
                 "Full-text retrieval is not initialized; access could not be checked.",
             )
             for article in articles
         ]
-    candidates = []
+
+    # A failed Crossref lookup leaves that study "unchecked" instead of failing the search.
+    requested_dois = {doi for article in articles if (doi := article_doi(article)) is not None}
+
+    async def check_integrity():
+        if crossref is None:
+            return {}
+        return await crossref.check_many(requested_dois)
+
+    # PMC access and Crossref notices are independent, so check both at once.
+    texts, reports = await asyncio.gather(retrieve_texts(), check_integrity())
+
+    # A duplicate record must not erase a PubMed retraction marker.
+    retracted_pmids = {a.pmid for a in results.articles if a.retracted}
+    retracted_dois = {doi for a in results.articles if a.retracted and (doi := article_doi(a))}
+    candidates, excluded = [], []
     for article, text in zip(articles, texts):
-        metadata = extract_metadata(article)
-        candidates.append(CandidateStudy(
+        doi = article_doi(article)
+        retracted = article.pmid in retracted_pmids or (doi is not None and doi in retracted_dois)
+        article = article.model_copy(update={"retracted": retracted})
+        integrity = assess_integrity(reports.get(doi), retracted)
+        study = CandidateStudy(
             article=article,
-            metadata=metadata,
+            metadata=extract_metadata(article),
             access=text.access,
-        ))
+            integrity=CandidateIntegrity(
+                status=integrity.status, label=integrity.label, notices=list(integrity.notices),
+            ),
+        )
+        if pmc_only:
+            study._document = text.document
+        # Retracted studies are kept out of the results but still reported, so the
+        # response says what was removed and why.
+        (excluded if integrity.status == "retracted" else candidates).append(study)
     return _Retrieved(
         ClaimCandidates(
-            claim=claim, normalized=normalized, query_translation=results.query_translation,
+            pmc_only=pmc_only, claim=claim, normalized=normalized, query_translation=results.query_translation,
             total_results=results.total_results, candidates=candidates,
+            excluded_retracted=excluded,
             coverage=EvidenceCoverage(
                 retrieved_studies=len(candidates),
                 full_text_available=sum(c.access.level == "full_text" for c in candidates),
@@ -183,5 +245,8 @@ async def _retrieve(
                 metadata_only=sum(c.access.level == "metadata_only" for c in candidates),
             ),
         ),
-        complete=pmc is None or not any(text.access.reason in ("request_failed", "parse_failed") for text in texts),
+        complete=(
+            (pmc is None or not any(text.access.reason == "request_failed" for text in texts))
+            and (crossref is None or requested_dois <= reports.keys())
+        ),
     )

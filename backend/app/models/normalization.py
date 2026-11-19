@@ -11,6 +11,7 @@ class NormalizedClaim(BaseModel):
     query: str
     intervention: str
     outcome: str
+    comparator: str | None = None
     population: str | None = None
     relation: str
     negated: bool
