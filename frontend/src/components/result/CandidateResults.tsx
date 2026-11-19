@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from 'react'
 import { ClaimCandidates, StudyPopulation } from '../../types'
 import { Candidate, Observation, Overview, Reading, SearchResult } from './researchTypes'
 import ClipboardBoard from './ClipboardBoard'
+import SurveyStats from '../SurveyStats'
+import ScrollCue from '../ScrollCue'
 import './CandidateResults.css'
 
 type StudyType = { label: string; letter: string; color: string }
@@ -216,6 +218,7 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
         <div className="vr__chat-body">
           <div className="research-answer__head"><p className="search__kicker">QUICK READ · FROM THE RETRIEVED STUDIES</p><span className="vr__chip">{basisLabel}</span></div>
           {pending && <div className="research-loading" role="status"><span className="research-spinner" />{result.pmc_only ? 'Reading the available full text and comparing it with your claim…' : 'Reading the abstracts and comparing them with your claim…'}<p>The papers are ready below. The overview can take a few minutes.</p></div>}
+          {pending && <SurveyStats />}
           {!pending && error && <p role="alert">{error}</p>}
           {quick && <Citations className="research-quick" observation={quick} numbers={numbers} onSelect={selectCitation} />}
           {overview?.synthesis && (overview.synthesis.observations.length > 1 || overview.synthesis.qualifications.length > 0) && <div className="research-observations">
@@ -261,6 +264,7 @@ function Results({ result, onRefresh }: { result: SearchResult; onRefresh: () =>
     })}
     {!shown.length && <p className="research-empty">{studies.length ? 'No papers in this filter. Relevance labels appear after analysis.' : 'No papers were retained for this search. This does not establish that the claim has no research behind it.'}</p>}
     {excluded.length > 0 && <details className="research-excluded"><summary>{excluded.length} retracted {excluded.length === 1 ? 'paper excluded' : 'papers excluded'} from the overview</summary>{excluded.map(study => <div key={study.article.pmid}><h4><a href={study.article.url} target="_blank" rel="noreferrer">{study.article.title}</a></h4><IntegrityNotice study={study} /></div>)}</details>}
+    {boards.length > 0 && <ScrollCue targetId={`board-${boards[0].id}`} papers={studies.length} onGo={() => goToBoard(boards[0].id)} />}
     <p className="vr__fine">Second Opinion summarizes research. It isn’t medical advice.</p>
   </div>
 }

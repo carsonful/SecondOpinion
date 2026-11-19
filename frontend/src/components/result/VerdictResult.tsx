@@ -2,8 +2,8 @@ import { VerdictData } from '../../types'
 import ScoreTip from './ScoreTip'
 import ReferralTabs from './ReferralTabs'
 
-function verdictTone(verdict: string) {
-  const v = verdict.toLowerCase()
+function verdictTone(verdict?: string) {
+  const v = (verdict ?? '').toLowerCase()
   if (v.includes('refut') || v.includes('bust')) return 'refuted'
   if (v.includes('confirm') || v.includes('support')) return 'supported'
   return 'unverified'
@@ -25,7 +25,8 @@ interface VerdictResultProps {
 export default function VerdictResult({ verdict, onPickRelated, onHowItWorks }: VerdictResultProps) {
   const tone = verdictTone(verdict.verdict)
   const sources = verdict.sources ?? []
-  const confidence = Math.max(0, Math.min(100, verdict.confidence))
+  const confidence = Math.max(0, Math.min(100, verdict.confidence ?? 0))
+  
 
   return (
     <div className="vr">

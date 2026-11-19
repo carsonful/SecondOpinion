@@ -1,4 +1,4 @@
-import { ADVISOR, REPO_URL, STUDENTS, TeamMember } from '../data/team'
+import { ADVISOR, INTERNS, REPO_URL, STUDENTS, SUPERVISOR, TeamMember } from '../data/team'
 import './AboutPage.css'
 
 // Picks up any photos in src/assets/team/ without breaking the build when
@@ -16,6 +16,14 @@ function photoFor(key: string): string | undefined {
   return match?.[1]
 }
 
+// The research poster. Lives next to the team photos; any common extension and case works
+// (researchposter.JPG, researchposter.jpg, .png). Without the file the section still shows.
+const posterFiles = import.meta.glob<string>('../assets/team/researchposter.{jpg,JPG,jpeg,JPEG,png,PNG,webp}', {
+  eager: true,
+  import: 'default',
+})
+const POSTER_SRC: string | undefined = Object.values(posterFiles)[0]
+
 function Avatar({ member }: { member: TeamMember }) {
   const src = photoFor(member.photo)
   return (
@@ -25,11 +33,35 @@ function Avatar({ member }: { member: TeamMember }) {
   )
 }
 
-const VERDICTS = [
-  { label: 'Supported', tag: 'Backed by science', tone: 'supported' },
-  { label: 'Refuted', tag: 'Busted myth', tone: 'refuted' },
-  { label: 'Unverified', tag: 'Little to no evidence', tone: 'unverified' },
-]
+/** Small headshot of the owner, pinned to the corner of their intern's avatar. */
+function OwnerBadge({ member }: { member: TeamMember }) {
+  const src = photoFor(member.photo)
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        right: -6,
+        bottom: -2,
+        width: 46,
+        height: 46,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: '3px solid rgba(255, 255, 255, 0.95)',
+        boxShadow: '0 0 0 2px rgba(158, 204, 250, 0.9), 0 6px 14px rgba(11, 25, 87, 0.25)',
+        background: 'linear-gradient(160deg, #FFF8EE, #DCEBFA)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 700,
+        color: '#1B3B6F',
+      }}
+    >
+      {src ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : member.initials}
+    </span>
+  )
+}
 
 function GitHubIcon() {
   return (
@@ -66,7 +98,7 @@ function RxPad() {
               <strong>Directions:</strong> paste it in, explore studies, open the sources
             </span>
             <span>
-              <strong>Contains:</strong> study types, abstracts, PMC access status
+              <strong>Contains:</strong> relevance-sorted studies, a cited overview, PMC access
             </span>
             <span>
               <strong>Refills:</strong> unlimited
@@ -83,25 +115,74 @@ function RxPad() {
   )
 }
 
-/** Brushed-foil blister strip holding the three verdict pills. */
-function BlisterStrip() {
+/** Where we're presenting. Sits under the project card. */
+function ShowcaseCard() {
   return (
-    <div className="blister" aria-label="Planned verdict categories">
-      <span className="blister__title">PLANNED VERDICT CATEGORIES</span>
-      <div className="blister__row">
-        {VERDICTS.map((v) => (
-          <div key={v.label} className="blister__cell">
-            <div className="blister__pocket">
-              <div className={`blister__pill blister__pill--${v.tone}`}>
-                <span className="blister__pill-gloss" aria-hidden="true" />
-              </div>
-            </div>
-            <strong>{v.label}</strong>
-            <span>{v.tag}</span>
-          </div>
-        ))}
+    <section
+      className="glass-card"
+      aria-labelledby="showcase-title"
+      style={{
+        marginTop: 40,
+        padding: 'clamp(22px, 4vw, 36px)',
+        borderRadius: 36,
+        display: 'grid',
+        gridTemplateColumns: POSTER_SRC ? 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))' : '1fr',
+        gap: 'clamp(20px, 4vw, 40px)',
+        alignItems: 'center',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'flex-start', minWidth: 0 }}>
+        <p className="about__eyebrow glass-pill" style={{ margin: 0 }}>
+          Fall 2026 Senior Design Showcase
+        </p>
+        <h2 id="showcase-title" style={{ margin: 0 }}>
+          Come see us present
+        </h2>
+        <p style={{ margin: 0, lineHeight: 1.6, color: 'var(--text-body)' }}>
+          We’re presenting Second Opinion at the Fall 2026 Senior Design Showcase on{' '}
+          <strong style={{ color: 'var(--text-strong)' }}>Thursday, November 19th, 2026</strong>, at the University
+          of Florida. Come find our poster and meet the Mythbusters.
+        </p>
+        <span
+          className="glass-pill"
+          style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 700, color: 'var(--accent-text)' }}
+        >
+          Thu · Nov 19, 2026 · University of Florida
+        </span>
+        <a className="about__repo" href={REPO_URL} target="_blank" rel="noreferrer">
+          <GitHubIcon />
+          View the code on GitHub
+        </a>
       </div>
-    </div>
+
+      {POSTER_SRC && (
+        <a
+          href={POSTER_SRC}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open our research poster full size"
+          style={{ display: 'block', minWidth: 0, textDecoration: 'none' }}
+        >
+          <img
+            src={POSTER_SRC}
+            alt="Our Second Opinion research poster for the Fall 2026 Senior Design Showcase"
+            style={{
+              display: 'block',
+              width: '100%',
+              maxHeight: 460,
+              objectFit: 'contain',
+              borderRadius: 18,
+              border: '1px solid rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 18px 40px rgba(11, 25, 87, 0.22)',
+              background: '#fff',
+            }}
+          />
+          <span style={{ display: 'block', marginTop: 10, textAlign: 'center', fontSize: 12.5, color: 'var(--text-muted)' }}>
+            Our research poster · click to enlarge
+          </span>
+        </a>
+      )}
+    </section>
   )
 }
 
@@ -132,21 +213,7 @@ export default function AboutPage() {
             <RxPad />
           </header>
 
-          <section className="about__project glass-card" aria-labelledby="project-title">
-            <div className="about__project-copy">
-              <h2 id="project-title">The project</h2>
-              <p>
-                Search a health claim to explore related PubMed studies, their research designs, abstracts,
-                and PMC access status. Three saved examples illustrate curated verdicts. Evidence appraisal,
-                automatic integrity screening, and live verdicts are planned for a future release.
-              </p>
-              <a className="about__repo" href={REPO_URL} target="_blank" rel="noreferrer">
-                <GitHubIcon />
-                View the code on GitHub
-              </a>
-            </div>
-            <BlisterStrip />
-          </section>
+          <ShowcaseCard />
         </div>
       </div>
 
@@ -191,6 +258,62 @@ export default function AboutPage() {
               <p>{ADVISOR.blurb}</p>
             </div>
           </article>
+
+          <article className="about__advisor glass-card" style={{ marginTop: 20 }}>
+            <div className="about__advisor-left">
+              <Avatar member={SUPERVISOR} />
+              <div>
+                <span className="about__role">{SUPERVISOR.role}</span>
+                <h3>{SUPERVISOR.name}</h3>
+              </div>
+            </div>
+            <div className="about__seam about__seam--vertical" />
+            <div className="about__advisor-right about__tint--cream">
+              <span className="about__advisor-title">{SUPERVISOR.title}</span>
+              <p>{SUPERVISOR.blurb}</p>
+            </div>
+          </article>
+
+          <h2 className="about__section-title" style={{ marginTop: 40 }}>
+            The interns
+          </h2>
+          <div className="about__grid">
+            {INTERNS.map((m, i) => {
+              const owner = STUDENTS.find((s) => s.name === m.owner)
+              return (
+                <article key={m.name} className="about__capsule glass-card" style={{ marginTop: 0 }}>
+                  <div className="about__capsule-top">
+                    <div style={{ position: 'relative' }}>
+                      <Avatar member={m} />
+                      {owner && <OwnerBadge member={owner} />}
+                    </div>
+                    <h3>{m.name}</h3>
+                    <span className="about__role">{m.shortRole}</span>
+                    {owner && (
+                      <span
+                        className="about__role"
+                        style={{
+                          marginTop: 4,
+                          padding: '4px 12px',
+                          borderRadius: 999,
+                          background: 'rgba(255, 255, 255, 0.7)',
+                          border: '1px solid rgba(255, 255, 255, 0.95)',
+                          color: '#5A6B8C',
+                        }}
+                      >
+                        Reports to {owner.name.split(' ')[0]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="about__seam" />
+                  <div className={`about__capsule-bottom about__tint--${i % 2 === 0 ? 'blue' : 'cream'}`}>
+                    <p>{m.blurb}</p>
+                  </div>
+                  <span className="about__gloss" aria-hidden="true" />
+                </article>
+              )
+            })}
+          </div>
         </section>
       </div>
     </div>
