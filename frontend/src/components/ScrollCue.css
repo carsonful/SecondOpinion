@@ -1,0 +1,80 @@
+/* Floating "papers below" pill. Navy in light mode, cream in dark mode, so it
+   stands out on either background. */
+.scroll-cue {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  max-width: calc(100vw - 24px);
+  border-radius: 999px;
+  background: var(--navy);
+  color: #FFF8EE;
+  box-shadow: 0 14px 34px rgba(11, 25, 87, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transform: translateX(-50%);
+  animation: scroll-cue-in 0.5s ease both;
+}
+.page[data-theme='dark'] .scroll-cue {
+  background: #FFF8EE;
+  color: var(--navy);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(11, 25, 87, 0.12);
+}
+
+.scroll-cue__go {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px 9px 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.scroll-cue__arrow {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--blue-light);
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 800;
+  animation: scroll-cue-bob 1.6s ease-in-out infinite;
+}
+.scroll-cue__text { display: flex; flex-direction: column; line-height: 1.25; }
+.scroll-cue__text strong { font-size: 14px; }
+.scroll-cue__text span { font-size: 12px; opacity: 0.8; }
+.scroll-cue__go:hover .scroll-cue__arrow { background: #FFF8EE; }
+.page[data-theme='dark'] .scroll-cue__go:hover .scroll-cue__arrow { background: var(--blue-pale); }
+
+.scroll-cue__close {
+  align-self: stretch;
+  padding: 0 16px 0 8px;
+  font: inherit;
+  font-size: 20px;
+  color: inherit;
+  opacity: 0.6;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.scroll-cue__close:hover { opacity: 1; }
+
+@keyframes scroll-cue-in {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes scroll-cue-bob {
+  0%, 100% { transform: translateY(-2px); }
+  50% { transform: translateY(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue, .scroll-cue__arrow { animation: none; }
+}
