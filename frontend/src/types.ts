@@ -1,5 +1,3 @@
-import { ReactNode } from 'react'
-
 export type StudyPopulation = 'human' | 'animal' | 'in_vitro' | 'unknown'
 
 export interface FullTextAccess {
@@ -41,23 +39,4 @@ export interface ClaimCandidates {
     }
     access: FullTextAccess
   }[]
-}
-
-/** One source behind a verdict. Shown as a tab in "Further reading". */
-export interface Source {
-  title: string
-  publisher: string // e.g. "Journal of Food Protection · 2011"
-  category: string // source category
-  takeaway: string // one sentence: what this source says about the claim
-  url: string
-  site: string // short label for the link button, e.g. "PubMed"
-}
-
-export interface VerdictData {
-  verdict: string
-  tag: string
-  confidence: number
-  chatBody: ReactNode
-  sources?: Source[]
-  relatedClaims?: string[]
 }

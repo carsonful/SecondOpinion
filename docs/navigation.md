@@ -45,8 +45,8 @@ storage. Existing in-flight request guards remain in the claim checker.
 
 The static host must serve the built `index.html` for direct requests to the
 three page addresses. Vite development and production preview do this locally.
-For the production reference configuration, see the deployment work in
-[#78](https://github.com/carsonful/SecondOpinion/issues/78). A host that returns
+The [Render Docker setup](deployment.md) and [Nginx reference configuration](security-deployment.md)
+also support direct loads. A host that returns
 404 for `/about` before loading the application cannot support direct links.
 Preserve real API errors and missing-asset 404 responses rather than sending
 them to the SPA fallback. This implementation is mounted at the origin root.
@@ -77,25 +77,6 @@ and traces are saved for failures and excluded from Git.
 These browser checks test observable focus and accessible names. They are not
 a claim that every screen reader has been manually tested. The wider contrast,
 educational tabs, and assistive-technology checks belong to #85.
-
-## Pending footer integration
-
-The footer in [PR 87](https://github.com/carsonful/SecondOpinion/pull/87) was still
-open when this branch was prepared. Its App callbacks use the previous `setPage`
-function. When combining the changes, retain this branch's routed App, import
-`Footer`, and place it immediately after `</main>`:
-
-```tsx
-<Footer
-  onHowItWorks={() => navigate('how-it-works')}
-  onAbout={() => navigate('about')}
-/>
-```
-
-Keep the footer outside the main landmark and preserve PR 87's home disclaimer
-and styles. The primary navigation tests use its explicit accessible name, so
-the separately named footer navigation does not make their selectors ambiguous.
-Run the full browser suite on the combined revision before merging.
 
 ## AI assistance
 

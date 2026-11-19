@@ -1,14 +1,13 @@
 # Future evidence-grading plan
 
-This document records the proposed evidence-grading workflow for a future
-release. The first release focuses on study-type labels, abstracts, and PMC
-full-text availability; it does not assign study grades or weights. The rules
-below describe planned behavior and are not the active claim-search response.
+This plan proposes study appraisal and evidence synthesis for a future release.
+The current app shows study designs, integrity notices, and cited research
+overviews based on verified PMC full text or available abstracts, depending on
+search scope. Evidence grades, weights, and verdicts are proposed features.
 
-The future workflow would use API metadata to assign an **evidence category**
-and **status flags** automatically, use the abstract to summarize the finding
-and its relevance to the claim, and assign the provisional base weights below
-when the design is known. Unknown designs would retain an unknown weight.
+The workflow would use metadata to assign an evidence category and status flags.
+Reviewers would use retrieved source text to establish findings and relevance
+before assigning a provisional starting weight where the design is known.
 
 ## Metadata: what helps or hurts?
 
@@ -109,18 +108,15 @@ precision; this version defines starting weights only.
 
 ### Adjusting the defaults later
 
-The runtime source of truth for `base_weights_v0.1` is
-[`backend/app/data/base_weights_v0.1.json`](../backend/app/data/base_weights_v0.1.json).
-It stores every weight and its rationale centrally. The loader rejects missing
-design rules, invalid numeric weights, and numeric defaults for unknown designs
-or unresolved syntheses. Change the version whenever changing a rule, and update
-this table and its tests together. Preserve previous versions when persisted
-assessments depend on them.
+The table above records the proposed `base_weights_v0.1` defaults. A future
+implementation should version each rule change and retain earlier rule versions
+when persisted assessments depend on them. Validate that every design is
+covered, numeric weights are within range, and unresolved designs stay unknown.
 
-### Runtime contract (issue #17)
+### Proposed design-weight inputs and outputs (issue #17)
 
-`get_design_weight()` in `app/services/weighting.py` accepts one already resolved
-design. These identifiers are the contract for metadata extraction (#14):
+The following identifiers describe the resolved study designs a future
+weighting step could accept from metadata extraction (#14).
 
 | Identifier | Meaning |
 | --- | --- |
@@ -136,10 +132,9 @@ design. These identifiers are the contract for metadata extraction (#14):
 | `research_synthesis` | Systematic review or meta-analysis; needs an established included design |
 | `unknown` | Missing, conflicting, or unresolved design |
 
-Missing or unrecognized identifiers return `unknown` with a `null` base weight
-and an explanation. This service does not interpret raw PubMed publication tags
-or abstracts. The extractor must resolve conflicting tags before supplying a
-design; passing a list of tags as a string does not add their weights.
+Missing or unrecognized identifiers would yield `unknown` with a `null` base
+weight and an explanation. Resolve conflicting publication tags and source
+descriptions before selecting a design. Use one design per assessed finding.
 
 For `research_synthesis`, an optional `included_design` supplies the established
 homogeneous design or one separately reported design group. A synthesis of
@@ -149,23 +144,14 @@ designs, another synthesis, a general review, or commentary do not establish an
 included primary design and leave the weight `null`. The caller must still
 resolve overlap before any future aggregation; this lookup cannot detect it.
 
-`evidence_workflow.score_study()` links this result to the claim and study IDs,
-records `component_scores.base_weight`, `weight_version`, `resolved_design`,
-`weighted_design`, and `weight_reason`. Supply the canonical design through
-`Study.study_type`, and any established synthesis design through
-`Study.synthesis_included_design`. Raw input remains on the original study.
-`final_weight` and `eligibility_reason` remain unset until assessed; this step
-does not determine relevance, findings, or suitability for human intervention
-claims. A subsequent integrity gate retains base-weight provenance and sets a
-blocked study's final contribution to zero. Passing the integrity gate alone
-does not establish a final contribution.
+Link each proposed weight to the claim and study IDs. Record the starting
+weight, rule version, resolved design, weighted design, and rationale. Preserve
+the original metadata tags and any supporting source passage. Determine final
+contribution after examining relevance, findings, and eligibility. Preserve the
+starting weight and document the reason when blocking a study's contribution.
 
-The base-weight lookup exists in the internal workflow. The current candidate
-retrieval endpoint returns study-type metadata and PMC access status; it does not
-return grades or weights. A future grading release may add weight, participant,
-eligibility, and finding details to the API and display them in a sortable
-evidence table (#26). Final contributions remain a planned step after claim
-assessment, with the proposed integrity rules above applied to blocked studies.
+A future API and sortable evidence table (#26) could present weight, participant,
+eligibility, and finding details after validation.
 
 ### Extraction limits and validation (issue #14)
 
@@ -176,12 +162,12 @@ Generic Journal Article or Letter tags do not establish a design. Abstract topic
 mentions cannot override a review classification. Research syntheses keep their
 included designs unresolved until a separate extraction step establishes them.
 
-Sample sizes require an explicit total enrollment/recruitment statement; the
-matching source sentence is returned. Planned counts, per-group counts,
-conflicting totals, missing abstracts, and review participant totals remain
-unknown. This intentionally misses many valid counts rather than adding arm
-counts or guessing from unrelated numbers. An animal-only MeSH flag is shown
-separately and does not establish a human participant count.
+The proposed sample-size extraction requires an explicit total enrollment or
+recruitment statement and would return the matching source sentence. Planned
+counts, per-group counts, conflicting totals, missing source text, and review
+participant totals would remain unknown. The plan intentionally favors explicit
+totals over adding arm counts or inferring counts from unrelated numbers.
+An animal-only MeSH flag is recorded separately from participant counts.
 
 The new regression suite, recorded review set, and evaluation tooling are
 maintained privately for now. Synthetic regression checks cover tag precedence,
@@ -228,7 +214,7 @@ or using them alone to determine a verdict.
 
 ## Findings: separate from the study grade
 
-These require reading the abstract; they are not standard metadata grades.
+Assess findings using the available source text and cite the supporting passage.
 
 | Extracted finding | Effect on the claim | Effect on study grade |
 | --- | --- | --- |
@@ -243,8 +229,8 @@ These require reading the abstract; they are not standard metadata grades.
 
 Each paper gets **evidence category + base weight + weight version + eligibility
 reason + effective weight + status flags + relevance + finding + short summary +
-citation**. Metadata grading uses code; AI interprets abstracts and
-writes summaries, retaining supporting passages.
+citation**. Proposed assessments would use explicit grading rules and retain
+the supporting passages for AI-generated interpretations and summaries.
 
 The overall summary groups comparable outcomes, explains agreement and
 contradictions, and distinguishes designs. Do not count duplicate reports or

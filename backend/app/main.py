@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         initialize_examples()
     except psycopg.Error:
-        # Saved examples are optional; the frontend falls back to a live search.
+        # The saved-examples database is optional for live claim search.
         logger.warning("saved examples database unavailable at startup")
     persistent = app.state.claims_cache.persistent
     if persistent:
