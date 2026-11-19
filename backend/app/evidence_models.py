@@ -30,6 +30,9 @@ class Study:
     study_type: str | None = None
     sample_size: int | None = None
     retracted: bool | None = None  # None = unchecked; False = checked, no notice found.
+    # Canonical design for an established homogeneous synthesis or separately
+    # reported design group. Never infer this from the review label alone.
+    synthesis_included_design: str | None = None
 
 
 @dataclass
@@ -41,6 +44,9 @@ class EvidenceScore:
     final_weight: float | None = None  # Not scored yet; 0 is a known non-contribution.
     weight_version: str | None = None  # Set when scoring rules are applied.
     eligibility_reason: str | None = None
+    resolved_design: str | None = None
+    weighted_design: str | None = None
+    weight_reason: str | None = None
 
 
 @dataclass

@@ -1,0 +1,31 @@
+{
+ "status": "ok",
+ "message-type": "work",
+ "message-version": "1.0.0",
+ "message": {
+  "DOI": "10.1002/14651858.cd014914.pub2",
+  "title": [
+   "Zinc for prevention and treatment of the common cold"
+  ],
+  "type": "journal-article",
+  "update-to": [
+   {
+    "DOI": "10.1002/14651858.cd014914",
+    "type": "new_version",
+    "label": "New version",
+    "source": "publisher",
+    "updated": {
+     "date-parts": [
+      [
+       2024,
+       5,
+       9
+      ]
+     ],
+     "date-time": "2024-05-09T00:00:00Z",
+     "timestamp": 1715212800000
+    }
+   }
+  ]
+ }
+}

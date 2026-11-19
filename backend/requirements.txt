@@ -3,3 +3,4 @@ uvicorn[standard]==0.54.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 httpx2==2.13.1
+psycopg[binary]==3.3.6

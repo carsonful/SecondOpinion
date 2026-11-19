@@ -4,11 +4,11 @@ import httpx2 as httpx
 import pytest
 
 from app.services.pubmed import (
-    MAX_RETRIES,
     RATE_WITHOUT_KEY,
     PubMedResponseError,
     PubMedUnavailableError,
 )
+from app.services.upstream import MAX_RETRIES
 from tests.helpers import (
     EMPTY_EFETCH,
     FakeClock,

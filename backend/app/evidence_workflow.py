@@ -1,13 +1,15 @@
-"""Small functions to fill in independently as the team builds the workflow.
+"""Legacy, unconnected workflow prototype.
 
-Normalization calls Azure Foundry; scoring and verdicts remain unimplemented.
-See docs/evidence-grading.md for the provisional grading rules.
+The active claims API does not call this module or expose its experimental
+numeric scoring. The current product shows study designs as educational labels.
 """
 
 from collections.abc import Sequence
 
 from app.evidence_models import Claim, EvidenceScore, Study, Verdict
+from app.services.integrity import AdmittedEvidence, require_admitted
 from app.services.normalization import normalize_claim as normalize_search_claim
+from app.services.weighting import get_design_weight
 
 
 def create_claim(raw_text: str) -> Claim:
@@ -26,20 +28,36 @@ def normalize_claim(raw_text: str) -> str:
 
 
 def score_study(claim: Claim, study: Study) -> EvidenceScore:
-    """TODO: assess one study for one claim and return their linked score.
+    """Record a provisional base weight from an already resolved study design.
 
-    Keep design weight separate from eligibility. Preserve unknown values,
-    record the rule version, and explain excluded or withheld evidence.
-    Add inputs for abstracts/findings when that retrieval contract is agreed.
+    `study_type` must be a canonical StudyDesign value from metadata extraction
+    (#14), not a raw PubMed publication type. Missing/unrecognized values remain
+    unknown. This does not establish relevance, findings, or eligibility;
+    final_weight remains None until those assessments are implemented.
     """
-    raise NotImplementedError("Evidence scoring is not implemented yet")
+    weight = get_design_weight(
+        study.study_type, included_design=study.synthesis_included_design,
+    )
+    return EvidenceScore(
+        claim_id=claim.id, study_id=study.id,
+        component_scores={"base_weight": weight.base_weight},
+        weight_version=weight.version,
+        resolved_design=weight.resolved_design,
+        weighted_design=weight.weighted_design,
+        weight_reason=weight.reason,
+    )
 
 
-def generate_verdict(claim: Claim, scores: Sequence[EvidenceScore]) -> Verdict:
+def generate_verdict(claim: Claim, evidence: Sequence[AdmittedEvidence]) -> Verdict:
     """TODO: summarize assessed findings using team-approved verdict rules.
+
+    `evidence` must be GateResult.admitted from apply_integrity_gate(), so retracted
+    and withheld studies can never reach this function (#19). Keep the
+    require_admitted() check below as the first line when implementing this.
 
     Reject scores for other claims. Weights alone cannot establish an outcome
     or confidence; extend these inputs with findings and citations first.
     Unimplemented analysis must not be returned as an 'unproven' verdict.
     """
+    require_admitted(evidence)
     raise NotImplementedError("Verdict generation is not implemented yet")

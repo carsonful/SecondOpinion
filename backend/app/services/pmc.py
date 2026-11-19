@@ -1,0 +1,135 @@
+"""Retrieve eligible PMC text through NCBI's documented BioC service only.
+
+No publisher scraping, subscription sessions, arbitrary URLs, or PDF downloads.
+Retrieval failures preserve the PubMed record and do not become quality scores.
+"""
+
+import asyncio
+import json
+import re
+from typing import Any
+
+import httpx2 as httpx
+
+from app.models.full_text import FullTextAccess, PMCDocument, RetrievalResult, TextSection
+from app.models.pubmed import PubMedArticle
+from app.services.cache import TTLCache
+from app.services.rate_limiter import RateLimiter
+
+BIOC_BASE = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_json"
+MAX_BYTES = 3_000_000
+MAX_TEXT = 600_000
+PMC_ID = re.compile(r"^PMC[1-9]\d{0,9}$")
+_EXCLUDED = {"TITLE", "ABSTRACT", "REF", "REFERENCES", "ACK_FUND", "AUTH_CONT", "COMP_INT", "SUPPL"}
+
+
+def unavailable(article: PubMedArticle, reason: str, detail: str) -> RetrievalResult:
+    pmc_id = article.pmc_id if article.pmc_id and PMC_ID.fullmatch(article.pmc_id) else None
+    return RetrievalResult(access=FullTextAccess(
+        level="abstract_only" if article.abstract else "metadata_only",
+        reason=reason, detail=detail, pmc_id=pmc_id,
+        source_url=f"https://pmc.ncbi.nlm.nih.gov/articles/{pmc_id}/" if pmc_id else None,
+    ))
+
+
+def parse_bioc(data: Any, pmc_id: str, expected_pmid: str) -> PMCDocument:
+    collections = data if isinstance(data, list) else [data]
+    for collection in collections:
+        if not isinstance(collection, dict):
+            continue
+        for document in collection.get("documents", []):
+            if not isinstance(document, dict) or document.get("id") != pmc_id:
+                continue
+            sections = []
+            license_text, pmid = None, None
+            total = 0
+            for passage in document.get("passages", []):
+                info = passage.get("infons", {})
+                license_text = license_text or info.get("license")
+                pmid = pmid or info.get("article-id_pmid")
+                passage_pmc = info.get("article-id_pmc")
+                if passage_pmc and passage_pmc != pmc_id:
+                    raise ValueError("PMC identifier mismatch")
+                label = str(info.get("section_type", "")).upper()
+                kind = str(info.get("type", "")).lower()
+                if label in _EXCLUDED or kind in ("front", "ref", "footnote") or "abstract" in kind:
+                    continue
+                # BioC section headings alone do not constitute full article text.
+                if "title" in kind:
+                    continue
+                raw_text = passage.get("text")
+                if not isinstance(raw_text, str):
+                    continue
+                text = " ".join(raw_text.split())
+                if not text:
+                    continue
+                total += len(text)
+                if total > MAX_TEXT:
+                    raise OverflowError("Article text exceeds supported size")
+                sections.append(TextSection(id=f"s{len(sections) + 1}", label=label or "BODY", text=text))
+            if str(pmid or "") != expected_pmid:
+                raise ValueError("PubMed identifier is absent or mismatched")
+            if not sections:
+                raise ValueError("No full-text body passages")
+            return PMCDocument(
+                pmc_id=pmc_id, pmid=str(pmid),
+                source_url=f"https://pmc.ncbi.nlm.nih.gov/articles/{pmc_id}/",
+                license=license_text, sections=sections,
+            )
+    raise ValueError("No matching PMC document")
+
+
+class PMCClient:
+    def __init__(self, http: httpx.AsyncClient, limiter: RateLimiter):
+        self._http = http
+        self._limiter = limiter
+        self._semaphore = asyncio.Semaphore(3)
+        self._documents: TTLCache[str, PMCDocument] = TTLCache(24 * 60 * 60, 64)
+
+    async def retrieve(self, article: PubMedArticle, *, refresh: bool = False) -> RetrievalResult:
+        pmc_id = article.pmc_id
+        if not pmc_id or not PMC_ID.fullmatch(pmc_id):
+            return unavailable(article, "no_pmc_id", "No valid PMC identifier was supplied by PubMed; full text was not retrieved.")
+        cached = None if refresh else self._documents.get(pmc_id)
+        if cached is not None and cached.pmid == article.pmid:
+            return self._available(cached)
+        try:
+            async with asyncio.timeout(25), self._semaphore:
+                for attempt in range(2):
+                    await self._limiter.acquire()
+                    async with self._http.stream("GET", f"{BIOC_BASE}/{pmc_id}/unicode", follow_redirects=False) as response:
+                        if response.status_code in (404, 410):
+                            return unavailable(article, "not_available", "Full text is not available through the supported PMC service; this does not establish that it is paywalled.")
+                        if response.status_code in (429, 500, 502, 503, 504) and attempt == 0:
+                            await response.aclose()
+                            await asyncio.sleep(1)
+                            continue
+                        if response.status_code != 200:
+                            return unavailable(article, "request_failed", "PMC retrieval failed; full-text availability is unknown. Try again later.")
+                        chunks, size = [], 0
+                        async for chunk in response.aiter_bytes():
+                            size += len(chunk)
+                            if size > MAX_BYTES:
+                                return unavailable(article, "too_large", "The PMC response exceeds the supported size.")
+                            chunks.append(chunk)
+                        data = json.loads(b"".join(chunks))
+                        document = parse_bioc(data, pmc_id, article.pmid)
+                        self._documents.set(pmc_id, document)
+                        return self._available(document)
+        except (httpx.HTTPError, TimeoutError):
+            return unavailable(article, "request_failed", "PMC retrieval timed out or failed; full-text availability is unknown. Try again later.")
+        except OverflowError:
+            return unavailable(article, "too_large", "The article exceeds the supported text size.")
+        except (ValueError, KeyError, TypeError, AttributeError):
+            return unavailable(article, "parse_failed", "The PMC response could not be verified as readable full text for this study.")
+        return unavailable(article, "request_failed", "PMC retrieval did not complete.")
+
+    @staticmethod
+    def _available(document: PMCDocument) -> RetrievalResult:
+        return RetrievalResult(
+            access=FullTextAccess(
+                level="full_text", reason="retrieved", detail="Full-text body passages retrieved from the supported PMC collection.",
+                pmc_id=document.pmc_id, source_url=document.source_url, license=document.license,
+                sections=list(dict.fromkeys(section.label for section in document.sections)),
+            ), document=document,
+        )

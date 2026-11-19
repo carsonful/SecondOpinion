@@ -12,9 +12,11 @@ class Settings(BaseSettings):
         env_file=Path(__file__).resolve().parents[1] / ".env", extra="ignore"
     )
 
-    azure_foundry_endpoint: str | None = None
-    azure_foundry_deployment: str | None = None
-    azure_foundry_api_key: SecretStr | None = None
+    azure_inference_endpoint: str | None = None
+    azure_model_deployment_name: str | None = None
+    azure_inference_api_key: SecretStr | None = None
+    database_url: SecretStr | None = None
+    cache_database_url: SecretStr | None = None
 
     app_name: str = "SecondOpinion API"
     cors_origins: list[str] = ["http://localhost:5173"]
@@ -24,6 +26,14 @@ class Settings(BaseSettings):
     ncbi_api_key: str | None = None
     ncbi_email: str | None = None
     ncbi_tool: str = "SecondOpinion"
+
+    # Crossref. Sending a contact email moves us into the "polite" pool, which allows
+    # 10 requests/second and 3 at once instead of 5 requests/second, 1 at a time.
+    crossref_mailto: str | None = None
+
+    # Claim cache TTL applies to memory and optional PostgreSQL; 0 disables both.
+    claims_cache_ttl_seconds: float = 6 * 60 * 60
+    claims_cache_max_entries: int = 256
 
 
 @lru_cache

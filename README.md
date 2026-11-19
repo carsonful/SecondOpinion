@@ -1,120 +1,136 @@
 # SecondOpinion
-Busting health myths backed by science.
 
-## Project structure
+Find research behind health claims.
 
-- `frontend/` — React + TypeScript (Vite)
-- `backend/` — Python API (FastAPI)
+The app normalizes a health claim, searches PubMed, and displays related studies
+with study-type labels, abstracts, and PMC full-text access status. Live search
+does not assign evidence grades, confidence scores, or verdicts.
 
-## Getting started
+Three saved examples show curated verdicts. They load from PostgreSQL without
+calling Azure or PubMed.
+
+## Local setup
 
 ### Backend
 
 Requires Python 3.11+.
 
-```
+```sh
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
 
-Runs on http://localhost:8000. Health check at `/api/health`. API docs at `/docs`.
+The API runs at http://localhost:8000. Interactive API docs are at `/docs`,
+the schema is at `/openapi.json`, and the health check is at `/api/health`.
 
-Credentials and optional settings go in `backend/.env` (see `backend/.env.example`).
+Copy `backend/.env.example` to `backend/.env` and configure the services you use:
 
-To run the tests:
+| Setting | Purpose |
+| --- | --- |
+| `AZURE_INFERENCE_ENDPOINT` | Resource base URL or `/openai/v1` URL for claim normalization. Project URLs ending in `/api/projects/...` are unsupported. |
+| `AZURE_MODEL_DEPLOYMENT_NAME` | Exact Azure deployment name; it can differ from the model name. |
+| `AZURE_INFERENCE_API_KEY` | Key for the resource serving that deployment. |
+| `DATABASE_URL` | PostgreSQL connection string for saved examples. Startup creates and seeds `example_results` when configured. |
+| `CACHE_DATABASE_URL` | Optional separate PostgreSQL database for claim results shared across processes and restarts. Must use a different database name from `DATABASE_URL`. |
+| `NCBI_API_KEY` | Optional; raises the shared NCBI rate limit from 3 to 10 requests per second. |
+| `NCBI_EMAIL` | Contact email for NCBI requests. |
+| `CROSSREF_MAILTO` | Optional contact email for Crossref's polite pool. |
+| `CORS_ORIGINS` | Allowed frontend origins as a JSON array; defaults to `["http://localhost:5173"]`. |
 
-```
-cd backend
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pytest
-```
-
-Backend layout:
-
-```
-backend/app/
-  main.py       # app factory, middleware, router registration
-  config.py     # settings loaded from env / .env
-  routers/      # HTTP endpoints (thin, delegate to services)
-  models/       # pydantic schemas
-  services/     # source API clients, normalization, grading
-backend/tests/  # pytest suite
-```
-
-Endpoints (full schemas at `/docs`):
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/health` | Status and API version |
-| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed, returns full study records in relevance order |
-| GET | `/api/pubmed/articles/{pmid}` | One PubMed record by PMID, 404 if it does not exist |
-
-PubMed calls are rate limited to stay under NCBI's ceiling (3 requests/second, or 10 with `NCBI_API_KEY` set) and retried on throttling or outages. If PubMed stays down the API returns 503. Tests run against recorded responses in `backend/tests/fixtures/`, so they never hit the live API.
+Uncached claim normalization requires the three Azure settings. PostgreSQL is
+optional for claim search.
+Restart the backend after changing settings. See `.env.example` for cache options.
 
 ### Frontend
 
-```
+```sh
 cd frontend
 npm install
 npm run dev
 ```
 
-Runs on http://localhost:5173 and proxies `/api` requests to the backend.
+The frontend runs at http://localhost:5173. Vite proxies `/api` to port 8000.
+For hosting, route `/api` to the backend and add the frontend origin to
+`CORS_ORIGINS`.
 
-**Tech:** React 18 + TypeScript, Vite, plain CSS (no framework). Design tokens live in `src/styles/theme.css`. Fonts are Comfortaa (body/UI, weights 500–700) and Homemade Apple (the "doctor's handwriting": the "Second" in the logo, "Mythbusters" on About, and handwritten notes), loaded via Google Fonts in `index.html`.
+### Checks
 
-**Design system:**
-- **Light and dark mode.** A sun/moon capsule toggle in the nav bar switches themes. The choice is saved in `localStorage` (`useTheme.ts`); dark is the default.
-- **Gradients.** Both themes use the Figma gradient's angle and stops (114deg, 0 / 19 / 43 / 69 / 88 / 100%). Light mode runs sky blue to cream; dark mode ("ink & cream") is near-black navy with the Figma blue (#125FC9) as soft corner glows. The gradient is pinned to the viewport.
-- **Liquid glass.** `.glass-card`, `.glass-pill` and `.glass-panel` read semantic tokens (`--card-bg`, `--text-strong`, …) defined per theme in `theme.css`, so components never hard-code theme colours.
-- **Dark top, light bottom.** In dark mode, the Search and About pages keep their lower half light (the result area and the team). Those sections set their own light tokens in their CSS, so they stay readable in dark mode no matter what.
-- **Props.** The paper Rx pad, the lab-report clipboards, the foil blister strips and the ink stamps look the same in both themes.
+From `backend/`, with the virtual environment activated:
 
-**Pages:**
-
-| Screen | Component | Notes |
-|---|---|---|
-| Search + result (home) | `SearchScreen.tsx`, `result/` | Capsule search bar and example claims. Before a search: the three checks in a foil blister strip. After a search the result appears underneath on the same page: verdict capsule with confidence meter and a "?" tooltip (hover, focus or tap) explaining the score; chat-style explanation with sources linked inline; "Further reading" as tabbed referral sheets on a clipboard, one tab per source, each linking to the original; related claims; a not-medical-advice note. Loading and error states show in the same spot. |
-| How it works | `HowItWorksPage.tsx`, `how/` | A capsule travels down a glass tube past three stations. Each station is a lab-report clipboard holding a working demo (normalize a messy claim, grade a study type, run a retraction scan); an ink stamp (NORMALIZED / GRADED / 1 RETRACTED) lands when you finish it. |
-| About | `AboutPage.tsx` | Hero with a paper Rx pad, project capsule with the verdicts in a foil blister strip and a GitHub link, team as glass capsules with photos and roles, advisor capsule. Team info lives in `src/data/team.ts`; photos in `src/assets/team/` (`carson.jpg`, `nj.jpg`, …) are picked up automatically, with initials as a fallback. |
-
-Navigation is React state in `App.tsx`, no router installed yet: the logo resets to search, nav links switch pages. `react-router-dom` is a quick follow-up if shareable links are needed.
-
-**Backend integration status:** `POST /api/claims` doesn't exist yet, so `useClaimChecker.ts` mocks one claim ("Is raw milk better for you than pasteurized?") from `src/data/mockResults.tsx`. Its explanation and further-reading tabs link to real, hand-checked sources (CDC, FDA, and a 2011 systematic review on PubMed). Any other claim hits the real fetch and shows the error state, which is expected for now. When the endpoint exists, drop the `MOCK_RESULTS` check and return the `VerdictData` shape from `src/types.ts`, including `sources` (title, publisher, category, takeaway, url, site): each source becomes one further-reading tab.
-
-Frontend layout:
-
-```
-frontend/src/
-  assets/
-    team/                team photos for the About page
-  components/
-    NavBar.tsx            logo, page links, theme toggle
-    SearchScreen.tsx      search + result page (dark top, light bottom)
-    result/
-      VerdictResult.tsx   verdict capsule, explanation, related claims
-      ScoreTip.tsx        the "?" tooltip next to the confidence score
-      ReferralTabs.tsx    further reading: tabbed referral sheets
-    HowItWorksPage.tsx    capsule tube + stations
-    how/
-      Clipboard.tsx       lab-report clipboard with an ink stamp
-      NormalizeDemo.tsx   interactive demo: claim normalization
-      GradingDemo.tsx     interactive demo: evidence grading
-      RetractionDemo.tsx  interactive demo: retraction checks
-    AboutPage.tsx         project, team and advisor
-  data/
-    mockResults.tsx       temporary mock verdict data (see above)
-    team.ts               names, roles and blurbs for the About page
-  hooks/
-    useClaimChecker.ts    shared state + fetch logic for checking a claim
-    useTheme.ts           light/dark mode, remembered per browser
-  styles/
-    theme.css            design tokens, gradient, glass utility classes
-  types.ts               shared TypeScript types
-  App.tsx                page routing (state-based) + top-level layout
+```sh
+pytest
 ```
 
-**Known gaps:** real `/api/claims` endpoint (#22), swap out mock data once it's live, expand How It Works content, About page content, accessibility pass (#28), usability testing (#27).
+From `frontend/`:
+
+```sh
+npm run build
+```
+
+Backend tests use recorded or mocked service responses. The PostgreSQL
+integration tests require `TEST_DATABASE_URL` (examples) or
+`TEST_CACHE_DATABASE_URL` (claim cache).
+
+## API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | Status and API version. |
+| POST | `/api/claims` | Normalize a claim and retrieve deduplicated PubMed studies with PMC access status. |
+| POST | `/api/claims/normalize` | Normalize a claim without searching. |
+| GET | `/api/pubmed/search?q=...&limit=20` | Search PubMed in relevance order. |
+| GET | `/api/pubmed/articles/{pmid}` | Retrieve one PubMed record. |
+| GET | `/api/crossref/notices?doi=...` | Look up retractions, corrections, and expressions of concern separately from claim search. |
+| GET | `/api/examples/{slug}` | Load `raw-milk`, `cold-showers`, or `cracking-knuckles`. |
+
+For claim request/response fields, errors, retrieval limits, and caching, see
+[the claim search contract](docs/claims-api.md). Repeated claims use an in-memory
+cache; `?refresh=true` requests fresh results. Set `CACHE_DATABASE_URL` to enable
+the optional shared PostgreSQL cache. From `backend/`, use
+`python -m app.cache_admin put /path/to/claim-result.json --limit 20` to load a
+complete result manually. The API guide covers validation, cache commands, TTLs,
+and fallback behavior when the cache database is unavailable.
+
+Crossref distinguishes an unchecked DOI (`retracted: null`) from a checked DOI
+with no retraction found (`retracted: false`). Neither establishes study quality.
+
+## Code map
+
+The backend uses FastAPI and Pydantic:
+
+- `backend/app/main.py`: app setup, shared service clients, and middleware.
+- `backend/app/routers/`: HTTP endpoints.
+- `backend/app/models/`: request and response schemas.
+- `backend/app/services/`: normalization, source clients, metadata, and caching.
+- `backend/app/data/example_results.json`: curated saved examples.
+- `backend/tests/`: public test suite and recorded responses.
+
+The frontend uses React 18, TypeScript, Vite, and plain CSS:
+
+- `frontend/src/App.tsx`: page selection using React state.
+- `frontend/src/components/SearchScreen.tsx` and `result/`: search and results.
+- `frontend/src/hooks/useClaimChecker.ts`: claim requests and request state.
+- `frontend/src/data/exampleClaims.ts` and `hydrateExample.tsx`: saved example links and rendering.
+- `frontend/src/components/HowItWorksPage.tsx` and `how/`: educational demos, including a planned integrity-screening preview.
+- `frontend/src/components/AboutPage.tsx` and `data/team.ts`: project and team content. Optional photos in `src/assets/team/` replace initials automatically.
+- `frontend/src/styles/theme.css`: theme tokens and shared glass styles. `useTheme.ts` saves the selected theme; dark is the default.
+
+Fonts load from Google Fonts in `frontend/index.html`. Search results and the
+team section use light backgrounds in both themes.
+
+## Current limits and future work
+
+Study-type letters and colors identify research designs; they are not quality
+grades. See [the study-type key](docs/study-guide.md).
+
+Evidence appraisal, findings synthesis, automatic integrity screening in claim
+search, and live verdict generation remain future work. Internal scoring and
+integrity prototypes are retained in `evidence_workflow.py`, `evidence_models.py`,
+`services/weighting.py`, and `services/integrity.py`; the claims endpoint does not
+call them. Their proposed rules are in [the future grading plan](docs/evidence-grading.md).
+
+Metadata extraction still needs independent validation. Other open work includes
+deployment, accessibility review, and usability testing.

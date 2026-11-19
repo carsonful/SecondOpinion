@@ -1,1 +1,1 @@
-"""Business logic: source API clients (PubMed, Europe PMC, Crossref), normalization, grading."""
+"""Business logic for source retrieval, normalization and study metadata."""
