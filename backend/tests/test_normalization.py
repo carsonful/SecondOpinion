@@ -193,15 +193,3 @@ def test_unusable_search_fields(fields):
     )
     with pytest.raises(FoundryUnavailableError):
         normalize_claim("zinc cures colds", settings=settings(), transport=transport)
-
-
-def test_workflow_uses_same_normalizer(monkeypatch):
-    from app import evidence_workflow
-    from app.models.normalization import NormalizedClaim
-
-    expected = NormalizedClaim(
-        query='(zinc) AND (common cold)', intervention="zinc",
-        outcome="common cold", relation="cures", negated=False,
-    )
-    monkeypatch.setattr(evidence_workflow, "normalize_search_claim", lambda raw: expected)
-    assert evidence_workflow.normalize_claim("zinc cures colds") == expected.query

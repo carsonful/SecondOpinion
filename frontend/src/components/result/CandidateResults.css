@@ -1,5 +1,3 @@
-/* Real-claim results. Reuses the verdict screen's capsule, glass panel and clipboard
-   (.vr__*, .referrals__* in SearchScreen.css) so both result screens look the same. */
 .research-results { width: 100%; max-width: 1080px; min-width: 0; margin: 0 auto; color: var(--text-body); line-height: 1.65; text-align: left; }
 .research-results * { box-sizing: border-box; }
 .research-results a { color: var(--accent-text); text-underline-offset: 3px; }
@@ -12,7 +10,7 @@
 .research-claim { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: -6px 0 0; font-size: 18px; font-weight: 700; color: var(--text-strong); overflow-wrap: anywhere; }
 .research-claim .research-btn { flex-shrink: 0; }
 
-/* Capsule: the numbers, where the verdict would go */
+/* Study counts */
 .vr__capsule--brief .vr__capsule-bottom { background: linear-gradient(160deg, #1B3B6F, #0B1957); }
 .research-stats { gap: 10px; font-size: 13.5px; }
 .research-stats p { margin: 0; line-height: 1.45; }

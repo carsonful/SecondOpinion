@@ -38,7 +38,7 @@ Optional environment values can be added to the service:
 | --- | --- |
 | `NCBI_EMAIL`, `CROSSREF_MAILTO` | Contact email for upstream research services. |
 | `NCBI_API_KEY` | Higher shared PubMed request rate. |
-| `DATABASE_URL` | PostgreSQL for curated saved examples; absent this, examples fall back to live search. |
+| `DATABASE_URL` | PostgreSQL for the saved-examples API. The frontend example buttons run live searches with either database configuration. |
 | `CACHE_DATABASE_URL` | Persistent claim cache, with a different database name from `DATABASE_URL`. |
 
 Docker copies only application code, runtime requirements, and the built public

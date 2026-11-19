@@ -9,7 +9,7 @@ from pydantic import SecretStr
 from app.config import get_settings
 from app.models.examples import ExampleResult
 
-# Fail fast when the database is down so callers can fall back to a live search.
+# Return an unavailable response promptly when the saved-examples database is down.
 CONNECT_TIMEOUT = 3
 
 

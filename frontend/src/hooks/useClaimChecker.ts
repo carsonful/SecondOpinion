@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ClaimCandidates, VerdictData } from '../types'
+import { ClaimCandidates } from '../types'
 
 export type Status = 'idle' | 'loading' | 'error' | 'success'
 
@@ -16,7 +16,6 @@ export function useClaimChecker() {
   const [claim, setClaim] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [errorMessage, setErrorMessage] = useState('')
-  const [verdict, setVerdict] = useState<VerdictData | null>(null)
   const [activeClaim, setActiveClaim] = useState('')
   const [candidates, setCandidates] = useState<ClaimCandidates | null>(null)
   const requestId = useRef(0)
@@ -31,7 +30,6 @@ export function useClaimChecker() {
 
     setStatus('loading')
     setErrorMessage('')
-    setVerdict(null)
     setCandidates(null)
 
     try {
@@ -66,10 +64,9 @@ export function useClaimChecker() {
     setClaim('')
     setStatus('idle')
     setErrorMessage('')
-    setVerdict(null)
     setActiveClaim('')
     setCandidates(null)
   }
 
-  return { pmcOnly, setPmcOnly, claim, setClaim, status, errorMessage, verdict, candidates, activeClaim, checkClaim, reset }
+  return { pmcOnly, setPmcOnly, claim, setClaim, status, errorMessage, candidates, activeClaim, checkClaim, reset }
 }

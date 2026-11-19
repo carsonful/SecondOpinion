@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useRef, useId, useState } from 'react'
 import { Status } from '../hooks/useClaimChecker'
-import { ClaimCandidates, VerdictData } from '../types'
+import { ClaimCandidates } from '../types'
 import { EXAMPLE_CLAIMS } from '../data/exampleClaims'
-import VerdictResult from './result/VerdictResult'
 import CandidateResults from './result/CandidateResults'
 import LoadingTips from './LoadingTips'
 import './SearchScreen.css'
@@ -27,7 +26,6 @@ interface SearchScreenProps {
   status: Status
   errorMessage: string
   checkClaim: (text: string, refresh?: boolean) => void
-  verdict: VerdictData | null
   candidates: ClaimCandidates | null
   activeClaim: string
   onHowItWorks?: () => void
@@ -45,7 +43,6 @@ export default function SearchScreen({
   status,
   errorMessage,
   checkClaim,
-  verdict,
   candidates,
   activeClaim,
   onHowItWorks,
@@ -53,7 +50,7 @@ export default function SearchScreen({
   const [showSearchInfo, setShowSearchInfo] = useState(false)
   const searchInfoId = useId()
   const resultRef = useRef<HTMLDivElement>(null)
-  const showResult = status === 'success' && Boolean(verdict || candidates)
+  const showResult = status === 'success' && Boolean(candidates)
 
   // Bring the result into view when it arrives
   useEffect(() => {
@@ -160,9 +157,6 @@ export default function SearchScreen({
             </div>
           )}
 
-          {showResult && verdict && (
-            <VerdictResult key={activeClaim} verdict={verdict} onPickRelated={pick} onHowItWorks={onHowItWorks} />
-          )}
           {showResult && candidates && <CandidateResults result={candidates} onRefresh={() => checkClaim(activeClaim, true)} />}
 
           {status === 'idle' && (

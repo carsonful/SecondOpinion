@@ -79,7 +79,6 @@ function App() {
             status={checker.status}
             errorMessage={checker.errorMessage}
             checkClaim={checker.checkClaim}
-            verdict={checker.verdict}
             candidates={checker.candidates}
             activeClaim={checker.activeClaim}
             onHowItWorks={() => navigate('how-it-works')}

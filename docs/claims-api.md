@@ -1,7 +1,9 @@
 # Claim search API
 
 `POST /api/claims` normalizes a health-effect claim, searches PubMed, and checks
-whether PMC body text can be retrieved. Study-type labels and access status are
+whether PubMed Central (PMC) body text can be retrieved. The optional PMC-only
+mode narrows retrieval to the PMC subset and lets the overview use verified
+article body text. Study-type labels and access status are
 descriptive metadata; the endpoint returns no evidence grades or claim verdict.
 Evidence grading is planned for a future release; proposed rules are documented
 in [the evidence-grading plan](evidence-grading.md).
@@ -12,11 +14,13 @@ Local base URL: `http://localhost:8000`. Interactive documentation is at
 `/docs`; the machine-readable schema is at `/openapi.json`.
 
 ```json
-{"claim":"Does zinc help with the common cold?","limit":5}
+{"claim":"Does zinc help with the common cold?","limit":5,"pmc_only":true}
 ```
 
-`claim` is required (1–2,000 characters); `limit` is optional (1–100, default
-20). Unknown fields are rejected.
+`claim` is required (1–2,000 characters). `limit` is optional (1–100, default 20)
+and applies before deduplication and retraction filtering. `pmc_only` is an
+optional boolean that defaults to `false` in the API and `true` in the web app.
+Unknown fields are rejected. See [search scope](#search-scope) for both modes.
 
 ## Response
 
@@ -41,6 +45,10 @@ These marks describe design categories, not quality. See the [study type key](st
 
 ## Full-text access
 
+Both search modes check PMC access for the retrieved records. The response
+reports access metadata and source links. Retrieved article bodies are held
+server-side for PMC-only overview analysis.
+
 The backend uses validated PMC IDs from authoritative PubMed records and the
 fixed [NCBI BioC PMC API](https://www.ncbi.nlm.nih.gov/research/bionlp/APIs/BioC-PMC/).
 It verifies PMCID and PMID identity and requires body text beyond the abstract.
@@ -63,20 +71,25 @@ failures are not cached.
 Invalid claims return 422; unavailable normalization or evidence services return
 503; unusable PubMed responses return 502.
 
-Repeated claims are served from an in-memory cache keyed by normalized query and
-limit. Add `?refresh=true` to fetch fresh results. Entries expire after six
-hours (`CLAIMS_CACHE_TTL_SECONDS`, `0` disables caching), with at most 256
+Repeated claims are served from an in-memory cache keyed by the executed PubMed
+query (including the PMC filter when selected) and limit. Add `?refresh=true`
+to fetch fresh results. Entries expire after six hours
+(`CLAIMS_CACHE_TTL_SECONDS`, `0` disables caching), with at most 256
 local entries (`CLAIMS_CACHE_MAX_ENTRIES`). Without further configuration, the
 cache clears when the backend restarts.
 
 To share claim results across processes and restarts, set `CACHE_DATABASE_URL`
 to a **separate PostgreSQL database**. It must have a different database name
 from `DATABASE_URL`, which is reserved for saved verdict examples. Startup
-creates only `claim_cache_entries` in the cache database. The existing claim
-endpoint, response shape, and default in-memory behavior remain the same.
-After a local miss, the backend reads the shared cache before calling Azure,
-PubMed, or PMC. A shared hit sets `cached: true` and makes no calls to those
-services. Failed PMC retrievals are not stored. If the cache database becomes
+creates only `claim_cache_entries` in the cache database. The backend checks the
+shared cache after an in-memory miss. A hit for cached normalization avoids
+Azure, and a hit for cached candidates avoids a PubMed search and sets
+`cached: true` when the candidates can be used directly. For a PMC-only search,
+cached access metadata can identify
+documents to restore. The backend checks the in-memory document cache and
+retrieves missing bodies from PMC as needed. It recomputes coverage and sets
+`cached: false` when it has to restore documents. Temporary PMC retrieval
+failures prevent candidate results from being cached. If the cache database becomes
 unavailable, requests continue through the existing in-memory/live path; restart
 the backend after restoring the database to re-enable the shared cache.
 
@@ -88,8 +101,10 @@ retrieval. Set the TTL to `0` to disable both caches.
 
 ### Manually add or inspect a cached claim
 
-From `backend/`, use a complete JSON response from `POST /api/claims`, or write
-one matching its schema at `/openapi.json`. The file must include the original
+The cache admin commands address the broader PubMed query. For `put`, use a
+response from `POST /api/claims` with `pmc_only: false`. A PMC-only response
+would be stored under the broader query key. From `backend/`, use a complete
+JSON response or write one matching its schema at `/openapi.json`. The file must include the original
 `claim`, `normalized` fields, `coverage`, and the complete `candidates` array.
 The command validates the response and its coverage counts before writing.
 The `--limit` value must match the request you intend to cache (default `20`).
@@ -216,9 +231,13 @@ provider availability or explanation accuracy.
 
 ### Search scope
 
-`POST /api/claims` accepts `pmc_only` (boolean, default `false` for API compatibility). The frontend defaults it to `true`. When enabled, the search adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. When disabled, it searches broader PubMed records. Both modes retain integrity checks and available study details; overviews use full text in PMC-only mode and abstracts in broader mode. Cache entries are separated by the actual search query.
+| Mode | Retrieval | Overview source |
+| --- | --- | --- |
+| PMC-only (`pmc_only: true`) | Adds the [PubMed Central subset](https://pubmed.ncbi.nlm.nih.gov/help/#pubmed-central-subset) before applying the result limit. Verified body text may still be unavailable for an individual paper. | Verified PMC body text when usable, with a labeled abstract fallback where available. |
+| Broader PubMed (`pmc_only: false`) | Searches PubMed without the PMC subset filter and still reports PMC access where available. | PubMed abstracts. |
 
-The search-page information button explains the coverage and retrieval-time tradeoff. Example buttons run a live search with the selected scope instead of loading a saved verdict that may have a different scope. Refresh retains the scope of the displayed search.
+Both modes screen for integrity notices. Example buttons run a live search with
+the selected scope. Refresh retains the scope of the displayed search.
 
 ## Inbound request limit
 
